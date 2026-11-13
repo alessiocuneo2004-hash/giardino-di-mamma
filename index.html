@@ -238,7 +238,8 @@
     <div class="velo" id="veloInfo" hidden>
       <h2>Come si gioca</h2>
       <ul class="comandi">
-        <li><span class="gesto">👆</span><span><b>Tocca</b>per ruotare il pezzo</span></li>
+        <li><span class="gesto">↺</span><span><b>Tocca a sinistra</b>per girare il pezzo a sinistra</span></li>
+        <li><span class="gesto">↻</span><span><b>Tocca a destra</b>per girarlo a destra</span></li>
         <li><span class="gesto">↔️</span><span><b>Trascina di lato</b>per spostarlo</span></li>
         <li><span class="gesto">⬇️</span><span><b>Trascina in giù</b>per farlo scendere</span></li>
         <li><span class="gesto">⚡</span><span><b>Striscia veloce in giù</b>per lasciarlo cadere</span></li>
@@ -487,9 +488,11 @@
     if (attivo() && !urta(pezzo.m, pezzo.x + dx, pezzo.y)) pezzo.x += dx;
   }
 
-  function ruota() {
+  // versoSinistra = true gira in senso antiorario, altrimenti in senso orario.
+  function ruota(versoSinistra) {
     if (!attivo()) return;
     var n = ruotata(pezzo.m);
+    if (versoSinistra === true) n = ruotata(ruotata(n)); // tre quarti di giro = un quarto all'indietro
     var prove = [0, -1, 1, -2, 2];
     for (var i = 0; i < prove.length; i++) {
       if (!urta(n, pezzo.x + prove[i], pezzo.y)) {
@@ -664,7 +667,7 @@
   });
 
   // Gesti (dito o mouse), ovunque sulla pagina tranne che sui pulsanti:
-  // tocco = ruota, trascina di lato = sposta, trascina in giù = scende,
+  // tocco = ruota (a sinistra o a destra secondo la metà di schermo toccata), trascina di lato = sposta, trascina in giù = scende,
   // strisciata veloce in giù = lascia cadere.
   var gesto = null;
 
@@ -706,7 +709,8 @@
     if (pezzo !== g.pezzo) return; // nel frattempo il pezzo si è già posato
     var durata = performance.now() - g.t0;
     if (!g.asse) {
-      if (durata < 400) ruota();
+      // Metà sinistra dello schermo: gira a sinistra. Metà destra: gira a destra.
+      if (durata < 400) ruota(g.x0 < window.innerWidth / 2);
     } else if (g.asse === 'y' && e.clientY - g.y0 > 50 && durata < 250) {
       cade();
     }

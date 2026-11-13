@@ -14,7 +14,7 @@ Dopo la prima apertura funziona anche senza internet.
 ## Comandi
 
 - Tastiera: ← → sposta · ↑ ruota · ↓ scende · Spazio lascia cadere · P pausa
-- Telefono: tocca per ruotare · trascina di lato per spostare · trascina in giù per far scendere · striscia veloce in giù per lasciar cadere
+- Telefono: tocca la metà sinistra o destra dello schermo per girare il pezzo da quella parte · trascina di lato per spostare · trascina in giù per far scendere · striscia veloce in giù per lasciar cadere
 
 Il pulsante "ℹ️ Comandi" in alto li mostra in qualsiasi momento.
 
