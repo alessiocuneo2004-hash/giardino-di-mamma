@@ -36,7 +36,8 @@
     gap: 12px;
     padding: 12px;
     overflow: hidden;
-    touch-action: manipulation;
+    touch-action: none;
+    -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
   }
@@ -170,13 +171,20 @@
     color: #fff3c4;
   }
 
-  .tasti { display: flex; gap: 8px; }
-  .tasti button {
-    width: 62px; height: 58px; padding: 0;
-    font-size: 26px;
-    touch-action: none;
+  .testata { display: flex; align-items: center; gap: 14px; }
+  #info { font-size: 16px; padding: 6px 12px; }
+
+  /* Schermata dei comandi: copre del tutto quello che c'è sotto. */
+  #veloInfo { background: var(--carta); gap: 10px; }
+  .comandi {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; gap: 8px;
+    text-align: left; font-size: 17px; line-height: 1.25;
   }
-  .aiuto { font-size: 15px; color: var(--tenue); margin: 0; text-align: center; }
+  .comandi li { display: flex; gap: 10px; align-items: center; }
+  .comandi .gesto { font-size: 24px; width: 34px; text-align: center; flex: none; }
+  .comandi b { display: block; }
+  .velo p.piccolo { font-size: 14px; }
 
   @media (max-width: 560px) {
     h1 { font-size: 22px; }
@@ -187,14 +195,18 @@
     .scheda .valore { font-size: 18px; }
     #prossimo { width: 48px; height: 48px; }
     #pausa { font-size: 15px; padding: 4px 8px; }
-    #campo { height: min(54vh, 576px); }
-    .aiuto { display: none; }
+    #campo { height: min(70vh, 576px); height: min(70dvh, 576px); }
+    #info { font-size: 14px; padding: 4px 10px; }
+    .comandi { font-size: 15px; gap: 6px; }
   }
 </style>
 </head>
 <body>
 
-<h1>🌷 Giardino di <span>Mamma</span></h1>
+<div class="testata">
+  <h1>🌷 Giardino di <span>Mamma</span></h1>
+  <button id="info" class="chiaro" aria-label="Come si gioca">ℹ️ Comandi</button>
+</div>
 
 <div class="gioco">
   <div class="campo">
@@ -222,6 +234,18 @@
       <p id="testoRecord"></p>
       <button id="ancora">Gioca ancora</button>
     </div>
+
+    <div class="velo" id="veloInfo" hidden>
+      <h2>Come si gioca</h2>
+      <ul class="comandi">
+        <li><span class="gesto">👆</span><span><b>Tocca</b>per ruotare il pezzo</span></li>
+        <li><span class="gesto">↔️</span><span><b>Trascina di lato</b>per spostarlo</span></li>
+        <li><span class="gesto">⬇️</span><span><b>Trascina in giù</b>per farlo scendere</span></li>
+        <li><span class="gesto">⚡</span><span><b>Striscia veloce in giù</b>per lasciarlo cadere</span></li>
+      </ul>
+      <p class="piccolo">Con la tastiera: ← → sposta · ↑ ruota · ↓ scende · Spazio lascia cadere · P pausa</p>
+      <button id="chiudiInfo">Ho capito</button>
+    </div>
   </div>
 
   <div class="pannello">
@@ -236,15 +260,6 @@
     <button id="pausa" class="chiaro">⏸ Pausa</button>
   </div>
 </div>
-
-<div class="tasti">
-  <button data-azione="sinistra" aria-label="Sinistra">◀</button>
-  <button data-azione="ruota" aria-label="Ruota">⟳</button>
-  <button data-azione="destra" aria-label="Destra">▶</button>
-  <button data-azione="giu" aria-label="Giù">▼</button>
-  <button data-azione="cade" aria-label="Lascia cadere">⤓</button>
-</div>
-<p class="aiuto">Tastiera: ← → sposta · ↑ ruota · ↓ scende · Spazio lascia cadere · P pausa</p>
 
 <script>
 (function () {
@@ -290,6 +305,7 @@
   var T_SPARIZIONE = 280, T_LAMPO = 160; // millisecondi: durata totale e parte del lampo
   var motoRidotto = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   var attesaFine = null;
+  var infoAperta = false, infoDaGioco = false;
 
   // Un record separato per ogni velocità (la chiave è la velocità di partenza).
   var records = {};
@@ -406,6 +422,7 @@
   }
 
   function pausa(metti) {
+    if (infoAperta) return;
     if (metti && stato === 'gioco') { stato = 'pausa'; veloPausa.hidden = false; }
     else if (!metti && stato === 'pausa') { stato = 'gioco'; veloPausa.hidden = true; }
   }
@@ -627,6 +644,10 @@
   document.addEventListener('keydown', function (e) {
     var k = e.key;
     if (k === 'ArrowLeft' || k === 'ArrowRight' || k === 'ArrowUp' || k === 'ArrowDown' || k === ' ') e.preventDefault();
+    if (infoAperta) {
+      if (k === 'Escape' || k === 'Enter') { e.preventDefault(); chiudiInfo(); }
+      return;
+    }
     if (k === 'p' || k === 'P' || k === 'Escape') {
       if (stato === 'gioco') pausa(true); else if (stato === 'pausa') pausa(false);
       return;
@@ -642,23 +663,76 @@
     else if (k === ' ') { if (!e.repeat) AZIONI.cade(); }
   });
 
-  // Tasti sullo schermo: tenendo premuto, sinistra/destra/giù si ripetono.
-  Array.prototype.forEach.call(document.querySelectorAll('[data-azione]'), function (b) {
-    var nome = b.getAttribute('data-azione');
-    var ripete = nome === 'sinistra' || nome === 'destra' || nome === 'giu';
-    var attesa = null, giro = null;
-    function ferma() { clearTimeout(attesa); clearInterval(giro); attesa = giro = null; }
-    b.addEventListener('pointerdown', function (e) {
-      e.preventDefault();
-      ferma();
-      AZIONI[nome]();
-      if (ripete) attesa = setTimeout(function () { giro = setInterval(AZIONI[nome], 70); }, 260);
-    });
-    b.addEventListener('pointerup', ferma);
-    b.addEventListener('pointerleave', ferma);
-    b.addEventListener('pointercancel', ferma);
-    b.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  // Gesti (dito o mouse), ovunque sulla pagina tranne che sui pulsanti:
+  // tocco = ruota, trascina di lato = sposta, trascina in giù = scende,
+  // strisciata veloce in giù = lascia cadere.
+  var gesto = null;
+
+  document.addEventListener('pointerdown', function (e) {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (e.target.closest && e.target.closest('button, .velo')) return;
+    if (!attivo()) return;
+    gesto = {
+      id: e.pointerId,
+      x0: e.clientX, y0: e.clientY,   // punto di partenza
+      ax: e.clientX, ay: e.clientY,   // punto dell'ultimo scatto di una casella
+      t0: performance.now(),
+      asse: null,                     // 'x' o 'y', deciso al primo movimento
+      pezzo: pezzo,
+      passo: Math.max(22, tela.getBoundingClientRect().width / COL)
+    };
   });
+
+  document.addEventListener('pointermove', function (e) {
+    var g = gesto;
+    if (!g || e.pointerId !== g.id || pezzo !== g.pezzo) return;
+    if (!g.asse) {
+      var dx = Math.abs(e.clientX - g.x0), dy = Math.abs(e.clientY - g.y0);
+      if (dx < 10 && dy < 10) return;
+      g.asse = dx > dy ? 'x' : 'y';
+    }
+    if (g.asse === 'x') {
+      while (e.clientX - g.ax >= g.passo) { sposta(1); g.ax += g.passo; }
+      while (g.ax - e.clientX >= g.passo) { sposta(-1); g.ax -= g.passo; }
+    } else {
+      while (e.clientY - g.ay >= g.passo && pezzo === g.pezzo) { scendi(true); g.ay += g.passo; }
+    }
+  });
+
+  document.addEventListener('pointerup', function (e) {
+    var g = gesto;
+    if (!g || e.pointerId !== g.id) return;
+    gesto = null;
+    if (pezzo !== g.pezzo) return; // nel frattempo il pezzo si è già posato
+    var durata = performance.now() - g.t0;
+    if (!g.asse) {
+      if (durata < 400) ruota();
+    } else if (g.asse === 'y' && e.clientY - g.y0 > 50 && durata < 250) {
+      cade();
+    }
+  });
+
+  document.addEventListener('pointercancel', function () { gesto = null; });
+  document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+  // Schermata "Come si gioca": se si apre durante la partita, il gioco si ferma.
+  var veloInfo = document.getElementById('veloInfo');
+  function apriInfo() {
+    if (infoAperta) return;
+    infoDaGioco = stato === 'gioco';
+    if (infoDaGioco) stato = 'pausa';
+    infoAperta = true;
+    veloInfo.hidden = false;
+  }
+  function chiudiInfo() {
+    if (!infoAperta) return;
+    infoAperta = false;
+    veloInfo.hidden = true;
+    if (infoDaGioco && stato === 'pausa') stato = 'gioco';
+    infoDaGioco = false;
+  }
+  document.getElementById('info').addEventListener('click', function () { apriInfo(); this.blur(); });
+  document.getElementById('chiudiInfo').addEventListener('click', chiudiInfo);
 
   Array.prototype.forEach.call(document.querySelectorAll('[data-vel]'), function (b) {
     b.addEventListener('click', function () { inizia(parseInt(b.getAttribute('data-vel'), 10)); });
