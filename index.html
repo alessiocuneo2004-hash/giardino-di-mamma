@@ -21,6 +21,7 @@
     --verde: #4f8a4c;
     --verde-scuro: #3b6b39;
     --terra: #efe4cc;
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; overscroll-behavior: none; }
@@ -98,7 +99,66 @@
     gap: 12px; padding: 16px;
     text-align: center; line-height: 1.35;
   }
-  .velo[hidden] { display: none; }
+  /* Le schermate entrano e escono in dissolvenza invece di comparire di colpo. */
+  .velo {
+    opacity: 1;
+    transition: opacity 200ms var(--ease-out), display 200ms allow-discrete;
+  }
+  .velo > * {
+    transform: scale(1);
+    transition: transform 200ms var(--ease-out);
+  }
+  .velo[hidden] { display: none; opacity: 0; transition-duration: 150ms; }
+  .velo[hidden] > * { transform: scale(0.97); transition-duration: 150ms; }
+  @starting-style {
+    .velo { opacity: 0; }
+    .velo > * { transform: scale(0.97); }
+  }
+  .velo > button:active { transform: translateY(2px); transition: none; }
+
+  /* Nuovo record: l'unico momento con un piccolo rimbalzo. */
+  .velo p.festa {
+    color: var(--testo);
+    font-size: 20px;
+    animation: festa 400ms cubic-bezier(0.34, 1.56, 0.64, 1) 150ms both;
+  }
+  @keyframes festa {
+    from { opacity: 0; transform: scale(0.9); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  /* Nuovo livello: la scheda pulsa e si illumina di giallo per un attimo. */
+  .scheda { position: relative; isolation: isolate; }
+  .scheda.sale { animation: impulso 300ms var(--ease-out); }
+  .scheda.sale::before {
+    content: '';
+    position: absolute; inset: 0;
+    z-index: -1;
+    border-radius: 10px;
+    background: #fff3c4;
+    opacity: 0;
+    animation: bagliore 600ms ease-out;
+  }
+  @keyframes impulso {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+  @keyframes bagliore {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+  }
+
+  /* Chi ha chiesto meno movimento al dispositivo: restano solo le dissolvenze. */
+  @media (prefers-reduced-motion: reduce) {
+    .velo > *, .velo[hidden] > * { transform: none; transition: none; }
+    .velo p.festa { animation: festaCalma 200ms ease-out 150ms both; }
+    .scheda.sale { animation: none; }
+  }
+  @keyframes festaCalma {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
   .velo h2 { margin: 0; font-size: 28px; font-weight: normal; }
   .velo p { margin: 0; font-size: 17px; color: var(--tenue); }
   .velo .grande { font-size: 22px; color: var(--testo); }
@@ -226,7 +286,10 @@
   var velBase = 1000;
   var stato = 'inizio'; // inizio | gioco | pausa | fine
   var accumulo = 0, ultimoTempo = 0;
-  var sparizione = null; // { righe: [...], fine: tempo }
+  var sparizione = null; // { righe: [...], inizio: tempo, fine: tempo }
+  var T_SPARIZIONE = 280, T_LAMPO = 160; // millisecondi: durata totale e parte del lampo
+  var motoRidotto = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  var attesaFine = null;
 
   // Un record separato per ogni velocità (la chiave è la velocità di partenza).
   var records = {};
@@ -308,6 +371,7 @@
 
   function inizia(vel) {
     if (vel) velBase = vel;
+    clearTimeout(attesaFine);
     record = records[velBase] || 0;
     griglia = grigliaVuota();
     sacco = null;
@@ -329,10 +393,16 @@
       try { localStorage.setItem('giardinoMammaRecords', JSON.stringify(records)); } catch (e) {}
     }
     document.getElementById('testoFine').textContent = 'Hai fatto ' + punti + ' punti!';
-    document.getElementById('testoRecord').textContent =
-      nuovoRecord && punti > 0 ? '🌟 Nuovo record! Bravissima!' : 'Il tuo record è ' + record + '.';
-    veloFine.hidden = false;
+    var festa = nuovoRecord && punti > 0;
+    var elTestoRecord = document.getElementById('testoRecord');
+    elTestoRecord.textContent = festa ? '🌟 Nuovo record! Bravissima!' : 'Il tuo record è ' + record + '.';
+    elTestoRecord.classList.toggle('festa', festa);
     aggiornaNumeri();
+    // Breve attesa: si vede il campo pieno prima che arrivi la schermata finale.
+    clearTimeout(attesaFine);
+    attesaFine = setTimeout(function () {
+      if (stato === 'fine') veloFine.hidden = false;
+    }, 350);
   }
 
   function pausa(metti) {
@@ -360,7 +430,8 @@
       if (griglia[y].every(function (v) { return v; })) piene.push(y);
     }
     if (piene.length) {
-      sparizione = { righe: piene, fine: performance.now() + 280 };
+      var adesso = performance.now();
+      sparizione = { righe: piene, inizio: adesso, fine: adesso + T_SPARIZIONE };
     } else {
       nuovoPezzo();
     }
@@ -377,9 +448,20 @@
     sparizione = null;
     punti += PUNTI_FILE[n] * livello;
     file += n;
+    var prima = livello;
     livello = Math.floor(file / FILE_PER_LIVELLO) + 1;
     aggiornaNumeri();
+    if (livello > prima) segnalaLivello();
     nuovoPezzo();
+  }
+
+  // Nuovo livello: la scheda "Livello" pulsa e il telefono vibra (dove è supportato).
+  function segnalaLivello() {
+    var scheda = elLivello.parentNode;
+    scheda.classList.remove('sale');
+    void scheda.offsetWidth; // fa ripartire l'animazione
+    scheda.classList.add('sale');
+    try { if (navigator.vibrate) navigator.vibrate([70, 50, 70]); } catch (e) {}
   }
 
   function attivo() { return stato === 'gioco' && pezzo && !sparizione; }
@@ -474,15 +556,25 @@
     }
     if (!griglia) return;
 
+    // File completate: prima un lampo che svanisce, poi le file sopra scivolano giù.
+    var trasc = sparizione ? ora - sparizione.inizio : 0;
+    var durLampo = motoRidotto ? T_SPARIZIONE : T_LAMPO;
     for (var y = 0; y < RIGHE; y++) {
       var lampo = sparizione && sparizione.righe.indexOf(y) !== -1;
+      var giu = 0;
+      if (sparizione && !lampo && trasc > durLampo) {
+        var sotto = 0;
+        for (var i = 0; i < sparizione.righe.length; i++) if (sparizione.righe[i] > y) sotto++;
+        var p = Math.min(1, (trasc - durLampo) / (T_SPARIZIONE - durLampo));
+        giu = sotto * LATO * (1 - Math.pow(1 - p, 3));
+      }
       for (var x = 0; x < COL; x++) {
         if (!griglia[y][x]) continue;
         if (lampo) {
-          var resto = Math.max(0, (sparizione.fine - ora) / 280);
-          casella(ctx, x * LATO, y * LATO, LATO, '#fff3b0', resto);
+          var resto = Math.min(1, 1 - trasc / durLampo);
+          if (resto > 0) casella(ctx, x * LATO, y * LATO, LATO, '#fff3b0', resto);
         } else {
-          casella(ctx, x * LATO, y * LATO, LATO, griglia[y][x]);
+          casella(ctx, x * LATO, y * LATO + giu, LATO, griglia[y][x]);
         }
       }
     }
