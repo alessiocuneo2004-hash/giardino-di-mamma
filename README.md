@@ -1,6 +1,6 @@
 # 🌷 Giardino di Mamma
 
-Un gioco di blocchi che cadono, a tema giardino: sistema le aiuole e completa le file per farle fiorire.
+Un gioco di blocchi che cadono in stile sala giochi al neon: sistema i pezzi e completa le file per farle sparire.
 
 ## Giocare
 
@@ -18,4 +18,6 @@ Dopo la prima apertura funziona anche senza internet.
 
 Il pulsante "ℹ️ Comandi" in alto li mostra in qualsiasi momento.
 
-Ogni velocità (Tranquilla, Normale, Veloce) ha il suo record, salvato sul dispositivo.
+Ogni difficoltà (Facile, Normale, Difficile) ha il suo meteo, il suo colore e il suo record, salvato sul dispositivo.
+
+I caratteri Press Start 2P e Nunito (cartella `fonts/`) sono distribuiti con licenza SIL Open Font License.

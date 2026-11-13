@@ -1,6 +1,6 @@
 // Permette di giocare anche senza internet dopo la prima apertura.
-var CACHE = 'giardino-mamma-v4';
-var FILES = ['./', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png', 'icon-180.png'];
+var CACHE = 'giardino-mamma-v5';
+var FILES = ['./', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png', 'icon-180.png', 'fonts/press-start-2p.woff2', 'fonts/nunito.woff2'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(FILES); }));

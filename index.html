@@ -5,122 +5,272 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 <title>Giardino di Mamma</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#f6efe2">
+<meta name="theme-color" content="#140726">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Giardino">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-180.png">
 <style>
+  @font-face {
+    font-family: 'Press Start 2P';
+    src: url('fonts/press-start-2p.woff2') format('woff2');
+    font-weight: 400; font-display: swap;
+  }
+  @font-face {
+    font-family: 'Nunito';
+    src: url('fonts/nunito.woff2') format('woff2');
+    font-weight: 400 800; font-display: swap;
+  }
+
   :root {
-    --sfondo: #f6efe2;
-    --carta: #fffaf0;
-    --bordo: #d9c9a8;
-    --testo: #3d3324;
-    --tenue: #7a6a52;
-    --verde: #4f8a4c;
-    --verde-scuro: #3b6b39;
-    --terra: #efe4cc;
+    --notte: #140726;        /* sfondo della pagina */
+    --buio: #08020f;         /* fondo del campo */
+    --quadro: rgba(10, 3, 22, 0.94);
+    --viola: #2a1a45;        /* pulsanti secondari */
+    --viola-bordo: #5a4a7a;
+    --lilla: #d9cdf5;        /* testo secondario */
+    --rosa: #ff7ac6;
+    --ciano: #19e3ff;
+    --verde: #8dff4a;
+    --inchiostro: #14051f;   /* testo sui pulsanti colorati */
+    /* Colore della difficoltà scelta: lo imposta il codice. */
+    --d: #8dff4a;
+    --d-scuro: #3f9a1a;
+    --scala: 1;
+    --pixel: 'Press Start 2P', ui-monospace, 'Courier New', monospace;
+    --testo: 'Nunito', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; overscroll-behavior: none; }
   body {
-    background: var(--sfondo);
-    color: var(--testo);
-    font-family: Georgia, "Times New Roman", serif;
+    background-color: var(--notte);
+    background-image:
+      linear-gradient(to right, rgba(162, 75, 255, 0.13) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(162, 75, 255, 0.13) 1px, transparent 1px);
+    background-size: 20px 20px;
+    color: #fff;
+    font-family: var(--testo);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 12px;
-    padding: 12px;
     overflow: hidden;
     touch-action: none;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
   }
-  h1 { margin: 0; font-size: 28px; font-weight: normal; letter-spacing: 1px; }
-  h1 span { color: var(--verde); }
 
-  .gioco { display: flex; gap: 16px; align-items: flex-start; }
+  /* Pavimento a griglia in prospettiva, del colore della difficoltà. */
+  .pavimento {
+    position: fixed; left: -60%; right: -60%; bottom: 0; height: 200px;
+    perspective: 220px; overflow: hidden; pointer-events: none; z-index: 0;
+  }
+  .pavimento > div {
+    position: absolute; inset: 0;
+    transform-origin: 50% 0; transform: rotateX(64deg);
+    background-image:
+      linear-gradient(to right, var(--d) 2px, transparent 2px),
+      linear-gradient(to bottom, var(--d) 2px, transparent 2px);
+    background-size: 34px 34px;
+    opacity: 0.5;
+  }
 
+  .pagina {
+    position: relative; z-index: 1;
+    width: min(100vw, 430px);
+    padding: 12px 12px 16px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+
+  /* ---------- Testata ---------- */
+  .testata { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 52px; }
+  .chi { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .distintivo {
+    flex: none;
+    width: 52px; height: 52px; border-radius: 50%;
+    background: #241046; border: 3px solid var(--d); box-shadow: 0 0 14px var(--d);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .nomi { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  h1 {
+    margin: 0; font-family: var(--pixel); font-size: 11px; line-height: 14px; font-weight: 400;
+    color: #fff; text-shadow: 0 0 8px #ff2a9d;
+  }
+  #sottotitolo { font-size: 14px; line-height: 18px; font-weight: 800; color: var(--d); }
+  .azioni { display: flex; gap: 10px; flex: none; }
+
+  /* ---------- Pulsanti ---------- */
+  button {
+    font-family: var(--testo); cursor: pointer; color: #fff;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+  .tasto {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    min-width: 48px; min-height: 48px; padding: 0 12px;
+    background: var(--viola); border: 3px solid #fff; box-shadow: 4px 4px 0 var(--d-scuro);
+    font-size: 15px; font-weight: 800;
+  }
+  .tasto.punto { font-family: var(--pixel); font-size: 16px; padding: 0; }
+  .primario {
+    width: 260px; max-width: 100%; min-height: 60px; padding: 8px 10px;
+    background: var(--d); color: var(--inchiostro);
+    border: 3px solid #fff; box-shadow: 6px 6px 0 var(--d-scuro), 0 0 16px var(--d);
+    font-family: var(--pixel); font-size: 16px; line-height: 24px;
+  }
+  .primario.grosso { width: 240px; font-size: 22px; line-height: 28px; }
+  .secondario {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    min-height: 48px; padding: 8px 20px;
+    background: rgba(10, 3, 22, 0.85); border: 2px solid rgba(255, 255, 255, 0.6);
+    font-size: 18px; font-weight: 800;
+  }
+  .tasto:active, .primario:active, .secondario:active { transform: translate(3px, 3px); }
+  .tasto:active { box-shadow: 1px 1px 0 var(--d-scuro); }
+  .primario:active { box-shadow: 3px 3px 0 var(--d-scuro), 0 0 16px var(--d); }
+
+  /* ---------- Barra dei numeri ---------- */
+  .hud {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 72px; padding: 0 14px;
+    background: rgba(10, 3, 22, 0.9); border: 2px solid var(--viola-bordo);
+  }
+  .voce { display: flex; flex-direction: column; gap: 6px; }
+  .voce.centro { align-items: center; gap: 2px; }
+  .et { font-family: var(--pixel); font-size: 10px; line-height: 12px; }
+  .et.rosa { color: var(--rosa); } .et.ciano { color: var(--ciano); } .et.verde { color: var(--verde); }
+  .num { font-family: var(--pixel); font-size: 15px; line-height: 18px; color: #fff; min-width: 4ch; }
+  .mini { display: flex; flex-direction: column; gap: 4px; font-size: 14px; line-height: 18px; color: var(--lilla); }
+  .mini b { color: #fff; }
+  .mini span { display: inline-block; }
+  #prossimo { width: 44px; height: 44px; display: block; }
+
+  /* ---------- Campo ---------- */
+  .campo-riga { display: flex; justify-content: center; }
   .campo {
-    position: relative;
-    border: 4px solid var(--bordo);
-    border-radius: 14px;
-    background: var(--terra);
-    overflow: hidden;
-    line-height: 0;
+    position: relative; line-height: 0; overflow: hidden;
+    background: var(--buio);
+    border: 3px solid var(--d);
+    box-shadow: 0 0 18px var(--d), 4px 4px 0 var(--d-scuro);
   }
   #campo {
-    display: block;
-    height: min(66vh, 576px);
-    width: auto;
-    aspect-ratio: 10 / 18;
+    position: relative; display: block;
+    aspect-ratio: 10 / 18; width: auto;
+    height: min(calc(100vh - 182px), calc((min(100vw, 430px) - 30px) * 1.8));
+    height: min(calc(100dvh - 182px), calc((min(100vw, 430px) - 30px) * 1.8));
   }
 
-  .pannello { display: flex; flex-direction: column; gap: 10px; width: 150px; }
-  .scheda {
-    background: var(--carta);
-    border: 2px solid var(--bordo);
-    border-radius: 12px;
-    padding: 8px 10px;
-    text-align: center;
-  }
-  .scheda .etichetta { font-size: 15px; color: var(--tenue); }
-  .scheda .valore { font-size: 28px; font-weight: bold; line-height: 1.15; }
-  #prossimo { width: 104px; height: 104px; }
-
-  button {
-    font-family: inherit;
-    font-size: 20px;
-    color: #fff;
-    background: var(--verde);
-    border: none;
-    border-bottom: 4px solid var(--verde-scuro);
-    border-radius: 12px;
-    padding: 10px 16px;
-    cursor: pointer;
-  }
-  button:active { transform: translateY(2px); border-bottom-width: 2px; }
-  button.chiaro {
-    background: var(--carta);
-    color: var(--testo);
-    border: 2px solid var(--bordo);
-    border-bottom-width: 4px;
-  }
-
+  /* ---------- Schermate sopra il gioco ---------- */
   .velo {
-    position: absolute; inset: 0;
-    background: rgba(255, 250, 240, 0.95);
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 12px; padding: 16px;
-    text-align: center; line-height: 1.35;
-  }
-  /* Le schermate entrano e escono in dissolvenza invece di comparire di colpo. */
-  .velo {
+    position: fixed; inset: 0; z-index: 10;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 16px; overflow: hidden;
+    background: rgba(8, 2, 15, 0.82);
     opacity: 1;
     transition: opacity 200ms var(--ease-out), display 200ms allow-discrete;
   }
-  .velo > * {
+  .velo > .adatta {
+    zoom: var(--scala);
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column; align-items: center;
+    width: 350px;
     transform: scale(1);
     transition: transform 200ms var(--ease-out);
   }
   .velo[hidden] { display: none; opacity: 0; transition-duration: 150ms; }
-  .velo[hidden] > * { transform: scale(0.97); transition-duration: 150ms; }
+  .velo[hidden] > .adatta { transform: scale(0.97); transition-duration: 150ms; }
   @starting-style {
     .velo { opacity: 0; }
-    .velo > * { transform: scale(0.97); }
+    .velo > .adatta { transform: scale(0.97); }
   }
-  .velo > button:active { transform: translateY(2px); transition: none; }
+  #veloInfo { z-index: 20; }
+
+  .quadro {
+    width: 100%; padding: 26px 18px 24px;
+    background: var(--quadro);
+    border: 3px solid var(--d);
+    box-shadow: 0 0 18px var(--d), 6px 6px 0 var(--d-scuro);
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+    text-align: center;
+  }
+  .quadro h2 {
+    margin: 0; font-family: var(--pixel); font-weight: 400;
+    font-size: 18px; line-height: 28px;
+    color: var(--d); text-shadow: 0 0 12px var(--d);
+  }
+  .quadro p { margin: 0; font-size: 16px; line-height: 22px; color: #fff; }
+  .quadro p.grande { font-size: 20px; line-height: 26px; font-weight: 800; }
+  .quadro p.nota { font-size: 15px; line-height: 20px; color: var(--lilla); }
+  .quadro p.nota b { color: #fff; }
+
+  /* Schermata iniziale: copre tutto. */
+  #veloInizio {
+    background-color: var(--notte);
+    background-image:
+      linear-gradient(to right, rgba(162, 75, 255, 0.13) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(162, 75, 255, 0.13) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  #veloInizio .adatta { gap: 0; }
+  .distintivo.grande {
+    position: relative; z-index: 2;
+    width: 168px; height: 168px; border-width: 5px;
+    box-shadow: 0 0 0 4px #0a0316, 0 0 26px var(--d);
+  }
+  #veloInizio .quadro { margin-top: -64px; padding-top: 80px; }
+  #veloInizio .quadro h2 { font-size: 26px; line-height: 34px; }
+  #veloInizio .secondario { margin-top: 22px; }
+
+  /* Leva della difficoltà */
+  .leva-zona { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 300px; max-width: 100%; margin: 4px 0; }
+  .joystick { position: relative; width: 220px; height: 150px; }
+  .asta {
+    position: absolute; left: 100px; top: 30px; width: 20px; height: 92px;
+    transform-origin: 50% 100%; transform: rotate(var(--inclina, 0deg));
+    transition: transform 160ms var(--ease-out);
+  }
+  .stelo { position: absolute; left: 4px; top: 22px; width: 12px; height: 70px; background: #cfc4ea; box-shadow: inset -3px 0 0 #8a7ab0; }
+  .pomello {
+    position: absolute; left: -16px; top: -14px; width: 52px; height: 52px; border-radius: 50%;
+    background: var(--d);
+    box-shadow: 0 0 20px var(--d), inset -6px -6px 0 rgba(0, 0, 0, 0.3), inset 6px 6px 0 rgba(255, 255, 255, 0.45);
+  }
+  .base { position: absolute; left: 30px; top: 112px; width: 160px; height: 34px; background: var(--viola); border: 3px solid #fff; box-shadow: 4px 4px 0 var(--viola-bordo); }
+  .collo { position: absolute; left: 90px; top: 104px; width: 40px; height: 14px; background: #0a0316; border: 3px solid #fff; }
+  .lato { position: absolute; top: 0; width: 110px; height: 150px; padding: 0; background: transparent; border: 0; }
+  .lato.sx { left: 0; } .lato.dx { right: 0; }
+  .scelte { display: flex; justify-content: space-between; width: 100%; }
+  .scelte button {
+    min-width: 88px; min-height: 44px; padding: 0 6px;
+    background: transparent; border: 3px solid transparent;
+    font-size: 15px; line-height: 18px; font-weight: 600; color: #cfc4ea;
+  }
+  .scelte button[aria-pressed="true"] { background: var(--viola); border-color: var(--d); color: var(--d); font-weight: 800; }
+
+  /* Elenco dei gesti */
+  .comandi {
+    list-style: none; margin: 0; padding: 0; width: 100%;
+    display: grid; gap: 10px;
+    text-align: left; font-size: 16px; line-height: 20px;
+  }
+  .comandi li { display: flex; gap: 12px; align-items: center; }
+  .comandi .gesto {
+    flex: none; width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--viola); border: 2px solid var(--d);
+    color: var(--d); font-size: 22px; font-weight: 800; font-family: system-ui, sans-serif;
+  }
+  .comandi b { display: block; font-weight: 800; }
+  .comandi span span { color: var(--lilla); }
 
   /* Nuovo record: l'unico momento con un piccolo rimbalzo. */
-  .velo p.festa {
-    color: var(--testo);
-    font-size: 20px;
+  .quadro p.festa {
+    font-size: 20px; line-height: 26px; font-weight: 800;
+    color: var(--d); text-shadow: 0 0 12px var(--d);
     animation: festa 400ms cubic-bezier(0.34, 1.56, 0.64, 1) 150ms both;
   }
   @keyframes festa {
@@ -128,137 +278,133 @@
     to   { opacity: 1; transform: scale(1); }
   }
 
-  /* Nuovo livello: la scheda pulsa e si illumina di giallo per un attimo. */
-  .scheda { position: relative; isolation: isolate; }
-  .scheda.sale { animation: impulso 300ms var(--ease-out); }
-  .scheda.sale::before {
-    content: '';
-    position: absolute; inset: 0;
-    z-index: -1;
-    border-radius: 10px;
-    background: #fff3c4;
-    opacity: 0;
-    animation: bagliore 600ms ease-out;
-  }
+  /* Nuovo livello: la scritta "Livello" pulsa e si accende per un attimo. */
+  .mini .sale { animation: impulso 300ms var(--ease-out); }
+  .mini .sale, .mini .sale b { animation-name: impulso, bagliore; animation-duration: 300ms, 600ms; animation-timing-function: var(--ease-out), ease-out; }
   @keyframes impulso {
     0%   { transform: scale(1); }
-    40%  { transform: scale(1.08); }
+    40%  { transform: scale(1.18); }
     100% { transform: scale(1); }
   }
   @keyframes bagliore {
-    from { opacity: 1; }
-    to   { opacity: 0; }
+    from { color: var(--d); text-shadow: 0 0 10px var(--d); }
+    to   { text-shadow: 0 0 0 transparent; }
   }
 
   /* Chi ha chiesto meno movimento al dispositivo: restano solo le dissolvenze. */
   @media (prefers-reduced-motion: reduce) {
-    .velo > *, .velo[hidden] > * { transform: none; transition: none; }
-    .velo p.festa { animation: festaCalma 200ms ease-out 150ms both; }
-    .scheda.sale { animation: none; }
+    .velo > .adatta, .velo[hidden] > .adatta { transform: none; transition: none; }
+    .quadro p.festa { animation: festaCalma 200ms ease-out 150ms both; }
+    .mini .sale, .mini .sale b { animation-name: bagliore; animation-duration: 600ms; }
+    .asta { transition: none; }
   }
   @keyframes festaCalma {
     from { opacity: 0; }
     to   { opacity: 1; }
   }
-  .velo h2 { margin: 0; font-size: 28px; font-weight: normal; }
-  .velo p { margin: 0; font-size: 17px; color: var(--tenue); }
-  .velo .grande { font-size: 22px; color: var(--testo); }
-  .velo button { width: 100%; max-width: 220px; }
-  .velo button small {
-    display: block;
-    font-size: 15px;
-    margin-top: 2px;
-    color: #fff3c4;
-  }
 
-  .testata { display: flex; align-items: center; gap: 14px; }
-  #info { font-size: 16px; padding: 6px 12px; }
-
-  /* Schermata dei comandi: copre del tutto quello che c'è sotto. */
-  #veloInfo { background: var(--carta); gap: 10px; }
-  .comandi {
-    list-style: none; margin: 0; padding: 0;
-    display: grid; gap: 8px;
-    text-align: left; font-size: 17px; line-height: 1.25;
-  }
-  .comandi li { display: flex; gap: 10px; align-items: center; }
-  .comandi .gesto { font-size: 24px; width: 34px; text-align: center; flex: none; }
-  .comandi b { display: block; }
-  .velo p.piccolo { font-size: 14px; }
-
-  @media (max-width: 560px) {
-    h1 { font-size: 22px; }
-    .gioco { flex-direction: column-reverse; align-items: center; gap: 8px; }
-    .pannello { flex-direction: row; width: auto; align-items: stretch; }
-    .scheda { padding: 4px 8px; }
-    .scheda .etichetta { font-size: 12px; }
-    .scheda .valore { font-size: 18px; }
-    #prossimo { width: 48px; height: 48px; }
-    #pausa { font-size: 15px; padding: 4px 8px; }
-    #campo { height: min(70vh, 576px); height: min(70dvh, 576px); }
-    #info { font-size: 14px; padding: 4px 10px; }
-    .comandi { font-size: 15px; gap: 6px; }
+  @media (max-width: 400px) {
+    #pausa .parola { display: none; }
+    #pausa { padding: 0; }
   }
 </style>
 </head>
 <body>
 
-<div class="testata">
-  <h1>🌷 Giardino di <span>Mamma</span></h1>
-  <button id="info" class="chiaro" aria-label="Come si gioca">ℹ️ Comandi</button>
-</div>
+<div class="pavimento" aria-hidden="true"><div></div></div>
 
-<div class="gioco">
-  <div class="campo">
-    <canvas id="campo" width="320" height="576"></canvas>
-
-    <div class="velo" id="veloInizio">
-      <h2>Benvenuta!</h2>
-      <p>Sistema le aiuole che cadono.<br>Ogni fila completa fiorisce e sparisce.</p>
-      <p class="grande">Scegli la velocità:</p>
-      <button data-vel="1000">🐢 Tranquilla<small>🏆 Record: <span data-rec="1000">0</span></small></button>
-      <button data-vel="700">🚶 Normale<small>🏆 Record: <span data-rec="700">0</span></small></button>
-      <button data-vel="450">🐇 Veloce<small>🏆 Record: <span data-rec="450">0</span></small></button>
+<div class="pagina">
+  <div class="testata">
+    <div class="chi">
+      <div class="distintivo" id="meteo"></div>
+      <div class="nomi">
+        <h1>Giardino di Mamma</h1>
+        <span id="sottotitolo"></span>
+      </div>
     </div>
-
-    <div class="velo" id="veloPausa" hidden>
-      <h2>Pausa ☕</h2>
-      <p>Il giardino ti aspetta.</p>
-      <button id="riprendi">Riprendi</button>
-      <button id="daCapo" class="chiaro">Ricomincia</button>
-    </div>
-
-    <div class="velo" id="veloFine" hidden>
-      <h2>Partita finita</h2>
-      <p class="grande" id="testoFine"></p>
-      <p id="testoRecord"></p>
-      <button id="ancora">Gioca ancora</button>
-    </div>
-
-    <div class="velo" id="veloInfo" hidden>
-      <h2>Come si gioca</h2>
-      <ul class="comandi">
-        <li><span class="gesto">↺</span><span><b>Tocca a sinistra</b>per girare il pezzo a sinistra</span></li>
-        <li><span class="gesto">↻</span><span><b>Tocca a destra</b>per girarlo a destra</span></li>
-        <li><span class="gesto">↔️</span><span><b>Trascina di lato</b>per spostarlo</span></li>
-        <li><span class="gesto">⬇️</span><span><b>Trascina in giù</b>per farlo scendere</span></li>
-        <li><span class="gesto">⚡</span><span><b>Striscia veloce in giù</b>per lasciarlo cadere</span></li>
-      </ul>
-      <p class="piccolo">Con la tastiera: ← → sposta · ↑ ruota · ↓ scende · Spazio lascia cadere · P pausa</p>
-      <button id="chiudiInfo">Ho capito</button>
+    <div class="azioni">
+      <button id="info" class="tasto punto" aria-label="Come si gioca">?</button>
+      <button id="pausa" class="tasto" aria-label="Pausa"><span id="iconaPausa"></span><span class="parola">Pausa</span></button>
     </div>
   </div>
 
-  <div class="pannello">
-    <div class="scheda">
-      <div class="etichetta">Prossima</div>
-      <canvas id="prossimo" width="104" height="104"></canvas>
+  <div class="hud">
+    <div class="voce"><span class="et rosa">PUNTI</span><span class="num" id="punti">0</span></div>
+    <div class="voce"><span class="et ciano">RECORD</span><span class="num" id="record">0</span></div>
+    <div class="mini"><span>File <b id="file">0</b></span><span>Livello <b id="livello">1</b></span></div>
+    <div class="voce centro"><span class="et verde">NEXT</span><canvas id="prossimo" width="112" height="112"></canvas></div>
+  </div>
+
+  <div class="campo-riga">
+    <div class="campo">
+      <canvas id="campo" width="700" height="1260"></canvas>
     </div>
-    <div class="scheda"><div class="etichetta">Punti</div><div class="valore" id="punti">0</div></div>
-    <div class="scheda"><div class="etichetta">File</div><div class="valore" id="file">0</div></div>
-    <div class="scheda"><div class="etichetta">Livello</div><div class="valore" id="livello">1</div></div>
-    <div class="scheda"><div class="etichetta">Record</div><div class="valore" id="record">0</div></div>
-    <button id="pausa" class="chiaro">⏸ Pausa</button>
+  </div>
+</div>
+
+<div class="velo" id="veloInizio">
+  <div class="adatta">
+    <div class="distintivo grande" id="meteoGrande"></div>
+    <div class="quadro">
+      <h2 id="nomeDiff"></h2>
+      <p id="descDiff"></p>
+      <div class="leva-zona" role="group" aria-label="Difficoltà">
+        <div class="joystick">
+          <div class="asta" aria-hidden="true"><div class="stelo"></div><div class="pomello"></div></div>
+          <div class="base" aria-hidden="true"></div>
+          <div class="collo" aria-hidden="true"></div>
+          <button type="button" class="lato sx" id="levaSx" aria-label="Inclina a sinistra: più facile"></button>
+          <button type="button" class="lato dx" id="levaDx" aria-label="Inclina a destra: più difficile"></button>
+        </div>
+        <div class="scelte">
+          <button type="button" data-diff="0">◀ Facile</button>
+          <button type="button" data-diff="1">Normale</button>
+          <button type="button" data-diff="2">Difficile ▶</button>
+        </div>
+      </div>
+      <p class="nota">Inclina la leva per cambiare difficoltà<br>Record: <b id="recordInizio">0</b></p>
+      <button type="button" id="gioca" class="primario grosso">GIOCA</button>
+    </div>
+    <button type="button" id="infoInizio" class="secondario">? Come si gioca</button>
+  </div>
+</div>
+
+<div class="velo" id="veloPausa" hidden>
+  <div class="adatta">
+    <div class="quadro">
+      <h2>PAUSA</h2>
+      <p>Il giardino ti aspetta.</p>
+      <button type="button" id="riprendi" class="primario">RIPRENDI</button>
+      <button type="button" id="daCapo" class="secondario">Ricomincia</button>
+    </div>
+  </div>
+</div>
+
+<div class="velo" id="veloFine" hidden>
+  <div class="adatta">
+    <div class="quadro">
+      <h2>PARTITA FINITA</h2>
+      <p class="grande" id="testoFine"></p>
+      <p id="testoRecord"></p>
+      <button type="button" id="ancora" class="primario">GIOCA ANCORA</button>
+    </div>
+  </div>
+</div>
+
+<div class="velo" id="veloInfo" hidden>
+  <div class="adatta">
+    <div class="quadro">
+      <h2>COME SI GIOCA</h2>
+      <ul class="comandi">
+        <li><span class="gesto" aria-hidden="true">↺</span><span><b>Tocca a sinistra</b><span>per girare il pezzo a sinistra</span></span></li>
+        <li><span class="gesto" aria-hidden="true">↻</span><span><b>Tocca a destra</b><span>per girarlo a destra</span></span></li>
+        <li><span class="gesto" aria-hidden="true">↔</span><span><b>Trascina di lato</b><span>per spostarlo</span></span></li>
+        <li><span class="gesto" aria-hidden="true">↓</span><span><b>Trascina in giù</b><span>per farlo scendere</span></span></li>
+        <li><span class="gesto" aria-hidden="true">⇊</span><span><b>Striscia veloce in giù</b><span>per lasciarlo cadere</span></span></li>
+      </ul>
+      <p class="nota">Con la tastiera: ← → sposta · ↑ ruota · ↓ scende · Spazio lascia cadere · P pausa</p>
+      <button type="button" id="chiudiInfo" class="primario">HO CAPITO</button>
+    </div>
   </div>
 </div>
 
@@ -266,23 +412,134 @@
 (function () {
   'use strict';
 
-  var COL = 10, RIGHE = 18, LATO = 32;
+  var COL = 10, RIGHE = 18, LATO = 70;
 
-  // Forme delle aiuole: da 2 a 4 caselle, ognuna con il suo colore di fiore.
+  // Forme dei pezzi: da 2 a 4 caselle, ognuna con il suo colore al neon.
   var FORME = [
-    { m: [[1, 1, 1, 1]],             c: '#5b9bd5' },
-    { m: [[1, 1], [1, 1]],           c: '#f2b632' },
-    { m: [[0, 1, 0], [1, 1, 1]],     c: '#b07cc6' },
-    { m: [[1, 0, 0], [1, 1, 1]],     c: '#e8853d' },
-    { m: [[0, 0, 1], [1, 1, 1]],     c: '#4fa7a0' },
-    { m: [[0, 1, 1], [1, 1, 0]],     c: '#6fae5a' },
-    { m: [[1, 1, 0], [0, 1, 1]],     c: '#e0637a' },
-    { m: [[1, 1, 1]],                c: '#d98cb3' },
-    { m: [[1, 0], [1, 1]],           c: '#c9a227' },
-    { m: [[1, 1]],                   c: '#8fa3d9' }
+    { m: [[1, 1, 1, 1]],             c: '#19c8ff' },
+    { m: [[1, 1], [1, 1]],           c: '#ffe14a' },
+    { m: [[0, 1, 0], [1, 1, 1]],     c: '#a24bff' },
+    { m: [[1, 0, 0], [1, 1, 1]],     c: '#ff8a2a' },
+    { m: [[0, 0, 1], [1, 1, 1]],     c: '#19f0c8' },
+    { m: [[0, 1, 1], [1, 1, 0]],     c: '#8dff4a' },
+    { m: [[1, 1, 0], [0, 1, 1]],     c: '#ff4a5e' },
+    { m: [[1, 1, 1]],                c: '#ff2a9d' },
+    { m: [[1, 0], [1, 1]],           c: '#fff27a' },
+    { m: [[1, 1]],                   c: '#6f7bff' }
   ];
   var PUNTI_FILE = [0, 100, 300, 500, 800];
   var FILE_PER_LIVELLO = 8;
+
+  // ---------- Icone a pixel (una lettera = un colore, il punto = vuoto) ----------
+
+  var SOLE = {
+    p: { a: '#ffb02a', b: '#ffe14a', c: '#ff9ab8', d: '#ffffff', e: '#0a0316' },
+    g: [
+      '....................',
+      '.........ee.........',
+      '........eaae........',
+      '....ee..eaae...ee...',
+      '...eaaeeebbee.eaae..',
+      '...eaaebbbbbbeeaae..',
+      '....eebbbbbbbbeee...',
+      '....ebbbbbbbbbbe....',
+      '....ebbbbbbbbbbe....',
+      '..eebbbdebbdebbbe.ee',
+      '.eaabbbeebbeebbbeeaa',
+      '.eaaebbbbbbbbbbe.eaa',
+      '..eeecbbebbebbce..ee',
+      '.....ebbbeebbbe.....',
+      '....eeebbbbbbe.ee...',
+      '...eaaeeebbee.eaae..',
+      '...eaae..ee...eaae..',
+      '....ee....ee...ee...',
+      '.........eaae.......',
+      '.........eaae.......'
+    ]
+  };
+  var VENTO = {
+    p: { a: '#e6e9ff', b: '#0a0316', c: '#ffffff', d: '#19e3ff' },
+    g: [
+      '....................',
+      '....................',
+      '....................',
+      '...........b........',
+      '.........bbabb......',
+      '........baaaaab.....',
+      '.......baaaaaaab....',
+      '.....bbaaaaaaaaab...',
+      'ddd.baaaaaaaaaaab...',
+      '...baaabbbaabbbaab..',
+      '...baaaacbaacbaaaab.',
+      '...baaaabbaabbaaaab.',
+      '...baaaaaaaaaaaaaab.',
+      'ddddbaaaaaaaaaaaaab.',
+      '....baaaabbbbaaaab..',
+      '.....bbbbbbbbbbbb...',
+      'dd..................',
+      '....................',
+      '....................',
+      '....................'
+    ]
+  };
+  var TEMPORALE = {
+    p: { a: '#8a78c0', b: '#0a0316', c: '#ffffff', d: '#ffe14a', e: '#19e3ff' },
+    g: [
+      '....................',
+      '.........bbbb.......',
+      '........baaaab......',
+      '.......baaaaaab.....',
+      '.....bbaaaaaaaab....',
+      '....baabbaaaabbbb...',
+      '...baaaaabaabaaaab..',
+      '..baaaaacbaacbaaaab.',
+      '..baaaaabbaabbaaaab.',
+      '...baaaaaaaaaaaaaab.',
+      '...baaaaacbcbaaaaab.',
+      '...baaaaabbbbaaaaab.',
+      '....bbbbbbbbbbbbbb..',
+      '...........d........',
+      '.....e....d....e....',
+      '.....e...ddd...e....',
+      '..........d.........',
+      '...e...e.d..........',
+      '.........d....e.....',
+      '....................'
+    ]
+  };
+  var PAUSA = {
+    p: { a: 'currentColor' },
+    g: ['........', '.aa..aa.', '.aa..aa.', '.aa..aa.', '.aa..aa.', '.aa..aa.', '.aa..aa.', '........']
+  };
+
+  function icona(def, px, etichetta) {
+    var h = def.g.length, w = def.g[0].length;
+    var s = '<svg width="' + px + '" height="' + px + '" viewBox="0 0 ' + w + ' ' + h + '" shape-rendering="crispEdges" ' +
+      (etichetta ? 'role="img" aria-label="' + etichetta + '"' : 'aria-hidden="true"') + '>';
+    for (var y = 0; y < h; y++) {
+      var riga = def.g[y], x = 0;
+      while (x < w) {
+        var ch = riga.charAt(x);
+        if (ch === '.') { x++; continue; }
+        var fine = x;
+        while (fine < w && riga.charAt(fine) === ch) fine++;
+        s += '<rect x="' + x + '" y="' + y + '" width="' + (fine - x) + '" height="1" fill="' + def.p[ch] + '"/>';
+        x = fine;
+      }
+    }
+    return s + '</svg>';
+  }
+
+  // ---------- Difficoltà: ognuna ha il suo meteo e il suo colore ----------
+
+  var DIFF = [
+    { nome: 'Facile', vel: 1000, colore: '#8dff4a', scuro: '#3f9a1a', inclina: -32, icona: SOLE,
+      alt: 'un sole sorridente', desc: 'Cielo sereno: i fiori cadono piano.', sotto: 'Facile · cielo sereno' },
+    { nome: 'Normale', vel: 700, colore: '#ffe14a', scuro: '#b38a00', inclina: 0, icona: VENTO,
+      alt: 'una nuvola col vento', desc: 'Tira vento: i fiori cadono a velocità normale.', sotto: 'Normale · tira vento' },
+    { nome: 'Difficile', vel: 450, colore: '#ff4a5e', scuro: '#b3122a', inclina: 32, icona: TEMPORALE,
+      alt: 'una nuvola temporalesca arrabbiata', desc: 'Temporale! I fiori cadono veloci.', sotto: 'Difficile · temporale' }
+  ];
 
   var tela = document.getElementById('campo');
   var ctx = tela.getContext('2d');
@@ -296,9 +553,11 @@
   var veloInizio = document.getElementById('veloInizio');
   var veloPausa = document.getElementById('veloPausa');
   var veloFine = document.getElementById('veloFine');
+  var veloInfo = document.getElementById('veloInfo');
 
   var griglia, pezzo, prossimo, sacco;
-  var punti, file, livello, record = 0;
+  var punti = 0, file = 0, livello = 1, record = 0;
+  var diffSel = 0;
   var velBase = 1000;
   var stato = 'inizio'; // inizio | gioco | pausa | fine
   var accumulo = 0, ultimoTempo = 0;
@@ -308,22 +567,49 @@
   var attesaFine = null;
   var infoAperta = false, infoDaGioco = false;
 
-  // Un record separato per ogni velocità (la chiave è la velocità di partenza).
+  // Un record separato per ogni difficoltà (la chiave è la velocità di partenza).
   var records = {};
   try { records = JSON.parse(localStorage.getItem('giardinoMammaRecords')) || {}; } catch (e) { records = {}; }
-  record = records[velBase] || 0;
-  elRecord.textContent = record;
+  try { diffSel = parseInt(localStorage.getItem('giardinoMammaDiff'), 10) || 0; } catch (e) { diffSel = 0; }
+  if (diffSel < 0 || diffSel >= DIFF.length) diffSel = 0;
 
-  function aggiornaRecordInizio() {
-    Array.prototype.forEach.call(document.querySelectorAll('[data-rec]'), function (el) {
-      el.textContent = records[el.getAttribute('data-rec')] || 0;
+  document.getElementById('iconaPausa').innerHTML = icona(PAUSA, 18);
+
+  // Cambia difficoltà: colore di tutta la pagina, meteo, testi e leva.
+  function scegliDiff(i) {
+    diffSel = Math.max(0, Math.min(DIFF.length - 1, i));
+    var d = DIFF[diffSel];
+    var radice = document.documentElement.style;
+    radice.setProperty('--d', d.colore);
+    radice.setProperty('--d-scuro', d.scuro);
+    radice.setProperty('--inclina', d.inclina + 'deg');
+    document.getElementById('meteo').innerHTML = icona(d.icona, 40, 'Difficoltà ' + d.nome.toLowerCase() + ': ' + d.alt);
+    document.getElementById('meteoGrande').innerHTML = icona(d.icona, 128, d.alt);
+    document.getElementById('sottotitolo').textContent = d.sotto;
+    document.getElementById('nomeDiff').textContent = d.nome.toUpperCase();
+    document.getElementById('descDiff').textContent = d.desc;
+    document.getElementById('recordInizio').textContent = records[d.vel] || 0;
+    Array.prototype.forEach.call(document.querySelectorAll('[data-diff]'), function (b) {
+      b.setAttribute('aria-pressed', String(parseInt(b.getAttribute('data-diff'), 10) === diffSel));
     });
+    velBase = d.vel;
+    record = records[velBase] || 0;
+    elRecord.textContent = record;
+    try { localStorage.setItem('giardinoMammaDiff', String(diffSel)); } catch (e) {}
   }
-  aggiornaRecordInizio();
+  scegliDiff(diffSel);
+
+  // Le schermate si rimpiccioliscono sui telefoni bassi, così ci stanno sempre.
+  function adatta() {
+    var s = Math.min(1, window.innerHeight / 790, window.innerWidth / 390);
+    document.documentElement.style.setProperty('--scala', s.toFixed(3));
+  }
+  adatta();
+  window.addEventListener('resize', adatta);
 
   function mostraInizio() {
     stato = 'inizio'; pezzo = null; griglia = grigliaVuota();
-    aggiornaRecordInizio();
+    scegliDiff(diffSel);
     veloPausa.hidden = true; veloFine.hidden = true; veloInizio.hidden = false;
   }
 
@@ -386,9 +672,9 @@
     return Math.max(110, velBase * Math.pow(0.88, livello - 1));
   }
 
-  function inizia(vel) {
-    if (vel) velBase = vel;
+  function inizia() {
     clearTimeout(attesaFine);
+    velBase = DIFF[diffSel].vel;
     record = records[velBase] || 0;
     griglia = grigliaVuota();
     sacco = null;
@@ -412,7 +698,7 @@
     document.getElementById('testoFine').textContent = 'Hai fatto ' + punti + ' punti!';
     var festa = nuovoRecord && punti > 0;
     var elTestoRecord = document.getElementById('testoRecord');
-    elTestoRecord.textContent = festa ? '🌟 Nuovo record! Bravissima!' : 'Il tuo record è ' + record + '.';
+    elTestoRecord.textContent = festa ? 'Nuovo record! Bravissima!' : 'Il tuo record è ' + record + '.';
     elTestoRecord.classList.toggle('festa', festa);
     aggiornaNumeri();
     // Breve attesa: si vede il campo pieno prima che arrivi la schermata finale.
@@ -473,7 +759,7 @@
     nuovoPezzo();
   }
 
-  // Nuovo livello: la scheda "Livello" pulsa e il telefono vibra (dove è supportato).
+  // Nuovo livello: la scritta "Livello" pulsa e il telefono vibra (dove è supportato).
   function segnalaLivello() {
     var scheda = elLivello.parentNode;
     scheda.classList.remove('sale');
@@ -530,50 +816,55 @@
 
   // ---------- Disegno ----------
 
-  function rettTondo(c, x, y, w, h, r) {
-    c.beginPath();
-    c.moveTo(x + r, y);
-    c.arcTo(x + w, y, x + w, y + h, r);
-    c.arcTo(x + w, y + h, x, y + h, r);
-    c.arcTo(x, y + h, x, y, r);
-    c.arcTo(x, y, x + w, y, r);
-    c.closePath();
+  // Ogni casella è un quadrato luminoso con uno smusso chiaro in alto a sinistra
+  // e scuro in basso a destra. Si disegna una volta sola per colore e poi si ricopia.
+  var stampi = {};
+  function stampo(colore, lato) {
+    var chiave = colore + '|' + lato;
+    if (stampi[chiave]) return stampi[chiave];
+    var margine = Math.ceil(lato * 0.3); // spazio per il bagliore
+    var c = document.createElement('canvas');
+    c.width = c.height = lato + margine * 2;
+    var g = c.getContext('2d');
+    var rientro = lato * 0.05, s = lato * 0.9, b = Math.max(1, Math.round(lato * 3 / 35));
+    var x = margine + rientro, y = margine + rientro;
+    g.shadowColor = colore; g.shadowBlur = lato * 0.2;
+    g.fillStyle = colore; g.fillRect(x, y, s, s);
+    g.shadowColor = 'transparent'; g.shadowBlur = 0;
+    g.fillStyle = 'rgba(255,255,255,0.45)';
+    g.fillRect(x, y, s, b); g.fillRect(x, y + b, b, s - b);
+    g.fillStyle = 'rgba(20,0,40,0.35)';
+    g.fillRect(x, y + s - b, s, b); g.fillRect(x + s - b, y, b, s - b);
+    stampi[chiave] = { tela: c, margine: margine };
+    return stampi[chiave];
   }
 
   function casella(c, x, y, lato, colore, alfa) {
-    c.save();
+    var st = stampo(colore, lato);
     c.globalAlpha = alfa == null ? 1 : alfa;
-    c.fillStyle = colore;
-    rettTondo(c, x + 1.5, y + 1.5, lato - 3, lato - 3, lato * 0.22);
-    c.fill();
-    // fiorellino al centro
-    var cx = x + lato / 2, cy = y + lato / 2, p = lato * 0.13;
-    c.fillStyle = 'rgba(255,255,255,0.55)';
-    for (var i = 0; i < 4; i++) {
-      var a = Math.PI / 4 + i * Math.PI / 2;
-      c.beginPath();
-      c.arc(cx + Math.cos(a) * p, cy + Math.sin(a) * p, p, 0, Math.PI * 2);
-      c.fill();
+    c.drawImage(st.tela, x - st.margine, y - st.margine);
+    c.globalAlpha = 1;
+  }
+
+  // Ombra del pezzo: contorno tratteggiato nel punto in cui atterrerà.
+  function contorno(c, m, px, py, lato) {
+    var rientro = lato * 0.05, spesso = Math.max(1, lato * 2 / 35);
+    c.save();
+    c.strokeStyle = 'rgba(255,255,255,0.75)';
+    c.lineWidth = spesso;
+    c.setLineDash([lato * 0.17, lato * 0.12]);
+    for (var r = 0; r < m.length; r++) {
+      for (var k = 0; k < m[r].length; k++) {
+        if (!m[r][k]) continue;
+        c.strokeRect(px + k * lato + rientro + spesso / 2, py + r * lato + rientro + spesso / 2,
+          lato * 0.9 - spesso, lato * 0.9 - spesso);
+      }
     }
-    c.fillStyle = 'rgba(255,240,170,0.95)';
-    c.beginPath();
-    c.arc(cx, cy, p * 0.75, 0, Math.PI * 2);
-    c.fill();
     c.restore();
   }
 
   function disegna(ora) {
     ctx.clearRect(0, 0, tela.width, tela.height);
-
-    // terreno a quadretti leggeri
-    ctx.strokeStyle = 'rgba(160,135,90,0.18)';
-    ctx.lineWidth = 1;
-    for (var c = 1; c < COL; c++) {
-      ctx.beginPath(); ctx.moveTo(c * LATO + 0.5, 0); ctx.lineTo(c * LATO + 0.5, tela.height); ctx.stroke();
-    }
-    for (var r = 1; r < RIGHE; r++) {
-      ctx.beginPath(); ctx.moveTo(0, r * LATO + 0.5); ctx.lineTo(tela.width, r * LATO + 0.5); ctx.stroke();
-    }
     if (!griglia) return;
 
     // File completate: prima un lampo che svanisce, poi le file sopra scivolano giù.
@@ -592,7 +883,7 @@
         if (!griglia[y][x]) continue;
         if (lampo) {
           var resto = Math.min(1, 1 - trasc / durLampo);
-          if (resto > 0) casella(ctx, x * LATO, y * LATO, LATO, '#fff3b0', resto);
+          if (resto > 0) casella(ctx, x * LATO, y * LATO, LATO, '#ffffff', resto);
         } else {
           casella(ctx, x * LATO, y * LATO + giu, LATO, griglia[y][x]);
         }
@@ -600,10 +891,10 @@
     }
 
     if (pezzo) {
-      // ombra: mostra dove atterrerà
+      // ombra: sempre in fondo, dove il pezzo atterrerà
       var oy = pezzo.y;
       while (!urta(pezzo.m, pezzo.x, oy + 1)) oy++;
-      disegnaForma(ctx, pezzo.m, pezzo.x * LATO, oy * LATO, LATO, pezzo.c, 0.22);
+      if (oy !== pezzo.y) contorno(ctx, pezzo.m, pezzo.x * LATO, oy * LATO, LATO);
       disegnaForma(ctx, pezzo.m, pezzo.x * LATO, pezzo.y * LATO, LATO, pezzo.c, 1);
     }
   }
@@ -619,10 +910,10 @@
   function disegnaProssimo() {
     ctxPross.clearRect(0, 0, telaPross.width, telaPross.height);
     if (!prossimo) return;
-    var lato = 24, m = prossimo.m;
+    var lato = 26, m = prossimo.m;
     var px = (telaPross.width - m[0].length * lato) / 2;
     var py = (telaPross.height - m.length * lato) / 2;
-    disegnaForma(ctxPross, m, px, py, lato, prossimo.c, 1);
+    disegnaForma(ctxPross, m, Math.round(px), Math.round(py), lato, prossimo.c, 1);
   }
 
   // ---------- Ciclo ----------
@@ -646,9 +937,17 @@
 
   document.addEventListener('keydown', function (e) {
     var k = e.key;
-    if (k === 'ArrowLeft' || k === 'ArrowRight' || k === 'ArrowUp' || k === 'ArrowDown' || k === ' ') e.preventDefault();
+    var suPulsante = e.target && e.target.tagName === 'BUTTON';
+    if (k === 'ArrowLeft' || k === 'ArrowRight' || k === 'ArrowUp' || k === 'ArrowDown') e.preventDefault();
+    if (k === ' ' && !suPulsante) e.preventDefault();
     if (infoAperta) {
-      if (k === 'Escape' || k === 'Enter') { e.preventDefault(); chiudiInfo(); }
+      if (k === 'Escape' || (k === 'Enter' && !suPulsante)) { e.preventDefault(); chiudiInfo(); }
+      return;
+    }
+    if (stato === 'inizio') {
+      if (k === 'ArrowLeft') scegliDiff(diffSel - 1);
+      else if (k === 'ArrowRight') scegliDiff(diffSel + 1);
+      else if ((k === 'Enter' || k === ' ') && !suPulsante) inizia();
       return;
     }
     if (k === 'p' || k === 'P' || k === 'Escape') {
@@ -656,6 +955,7 @@
       return;
     }
     if (k === 'Enter') {
+      if (suPulsante) return;
       if (stato === 'fine') inizia(); else if (stato === 'pausa') pausa(false);
       return;
     }
@@ -667,7 +967,8 @@
   });
 
   // Gesti (dito o mouse), ovunque sulla pagina tranne che sui pulsanti:
-  // tocco = ruota (a sinistra o a destra secondo la metà di schermo toccata), trascina di lato = sposta, trascina in giù = scende,
+  // tocco = ruota (a sinistra o a destra secondo la metà di schermo toccata),
+  // trascina di lato = sposta, trascina in giù = scende,
   // strisciata veloce in giù = lascia cadere.
   var gesto = null;
 
@@ -720,7 +1021,6 @@
   document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
 
   // Schermata "Come si gioca": se si apre durante la partita, il gioco si ferma.
-  var veloInfo = document.getElementById('veloInfo');
   function apriInfo() {
     if (infoAperta) return;
     infoDaGioco = stato === 'gioco';
@@ -736,11 +1036,17 @@
     infoDaGioco = false;
   }
   document.getElementById('info').addEventListener('click', function () { apriInfo(); this.blur(); });
+  document.getElementById('infoInizio').addEventListener('click', function () { apriInfo(); this.blur(); });
   document.getElementById('chiudiInfo').addEventListener('click', chiudiInfo);
 
-  Array.prototype.forEach.call(document.querySelectorAll('[data-vel]'), function (b) {
-    b.addEventListener('click', function () { inizia(parseInt(b.getAttribute('data-vel'), 10)); });
+  // Scelta della difficoltà: i due lati della leva oppure i tre nomi.
+  document.getElementById('levaSx').addEventListener('click', function () { scegliDiff(diffSel - 1); });
+  document.getElementById('levaDx').addEventListener('click', function () { scegliDiff(diffSel + 1); });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-diff]'), function (b) {
+    b.addEventListener('click', function () { scegliDiff(parseInt(b.getAttribute('data-diff'), 10)); });
   });
+  document.getElementById('gioca').addEventListener('click', function () { this.blur(); inizia(); });
+
   document.getElementById('pausa').addEventListener('click', function () {
     if (stato === 'gioco') pausa(true); else if (stato === 'pausa') pausa(false);
     this.blur();
