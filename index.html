@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Giardino di Mamma</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#f6efe2">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Giardino">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+  :root {
+    --sfondo: #f6efe2;
+    --carta: #fffaf0;
+    --bordo: #d9c9a8;
+    --testo: #3d3324;
+    --tenue: #7a6a52;
+    --verde: #4f8a4c;
+    --verde-scuro: #3b6b39;
+    --terra: #efe4cc;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; overscroll-behavior: none; }
+  body {
+    background: var(--sfondo);
+    color: var(--testo);
+    font-family: Georgia, "Times New Roman", serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px;
+    overflow: hidden;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  h1 { margin: 0; font-size: 28px; font-weight: normal; letter-spacing: 1px; }
+  h1 span { color: var(--verde); }
+
+  .gioco { display: flex; gap: 16px; align-items: flex-start; }
+
+  .campo {
+    position: relative;
+    border: 4px solid var(--bordo);
+    border-radius: 14px;
+    background: var(--terra);
+    overflow: hidden;
+    line-height: 0;
+  }
+  #campo {
+    display: block;
+    height: min(66vh, 576px);
+    width: auto;
+    aspect-ratio: 10 / 18;
+  }
+
+  .pannello { display: flex; flex-direction: column; gap: 10px; width: 150px; }
+  .scheda {
+    background: var(--carta);
+    border: 2px solid var(--bordo);
+    border-radius: 12px;
+    padding: 8px 10px;
+    text-align: center;
+  }
+  .scheda .etichetta { font-size: 15px; color: var(--tenue); }
+  .scheda .valore { font-size: 28px; font-weight: bold; line-height: 1.15; }
+  #prossimo { width: 104px; height: 104px; }
+
+  button {
+    font-family: inherit;
+    font-size: 20px;
+    color: #fff;
+    background: var(--verde);
+    border: none;
+    border-bottom: 4px solid var(--verde-scuro);
+    border-radius: 12px;
+    padding: 10px 16px;
+    cursor: pointer;
+  }
+  button:active { transform: translateY(2px); border-bottom-width: 2px; }
+  button.chiaro {
+    background: var(--carta);
+    color: var(--testo);
+    border: 2px solid var(--bordo);
+    border-bottom-width: 4px;
+  }
+
+  .velo {
+    position: absolute; inset: 0;
+    background: rgba(255, 250, 240, 0.95);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 12px; padding: 16px;
+    text-align: center; line-height: 1.35;
+  }
+  .velo[hidden] { display: none; }
+  .velo h2 { margin: 0; font-size: 28px; font-weight: normal; }
+  .velo p { margin: 0; font-size: 17px; color: var(--tenue); }
+  .velo .grande { font-size: 22px; color: var(--testo); }
+  .velo button { width: 100%; max-width: 220px; }
+  .velo button small {
+    display: block;
+    font-size: 15px;
+    margin-top: 2px;
+    color: #fff3c4;
+  }
+
+  .tasti { display: flex; gap: 8px; }
+  .tasti button {
+    width: 62px; height: 58px; padding: 0;
+    font-size: 26px;
+    touch-action: none;
+  }
+  .aiuto { font-size: 15px; color: var(--tenue); margin: 0; text-align: center; }
+
+  @media (max-width: 560px) {
+    h1 { font-size: 22px; }
+    .gioco { flex-direction: column-reverse; align-items: center; gap: 8px; }
+    .pannello { flex-direction: row; width: auto; align-items: stretch; }
+    .scheda { padding: 4px 8px; }
+    .scheda .etichetta { font-size: 12px; }
+    .scheda .valore { font-size: 18px; }
+    #prossimo { width: 48px; height: 48px; }
+    #pausa { font-size: 15px; padding: 4px 8px; }
+    #campo { height: min(54vh, 576px); }
+    .aiuto { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🌷 Giardino di <span>Mamma</span></h1>
+
+<div class="gioco">
+  <div class="campo">
+    <canvas id="campo" width="320" height="576"></canvas>
+
+    <div class="velo" id="veloInizio">
+      <h2>Benvenuta!</h2>
+      <p>Sistema le aiuole che cadono.<br>Ogni fila completa fiorisce e sparisce.</p>
+      <p class="grande">Scegli la velocità:</p>
+      <button data-vel="1000">🐢 Tranquilla<small>🏆 Record: <span data-rec="1000">0</span></small></button>
+      <button data-vel="700">🚶 Normale<small>🏆 Record: <span data-rec="700">0</span></small></button>
+      <button data-vel="450">🐇 Veloce<small>🏆 Record: <span data-rec="450">0</span></small></button>
+    </div>
+
+    <div class="velo" id="veloPausa" hidden>
+      <h2>Pausa ☕</h2>
+      <p>Il giardino ti aspetta.</p>
+      <button id="riprendi">Riprendi</button>
+      <button id="daCapo" class="chiaro">Ricomincia</button>
+    </div>
+
+    <div class="velo" id="veloFine" hidden>
+      <h2>Partita finita</h2>
+      <p class="grande" id="testoFine"></p>
+      <p id="testoRecord"></p>
+      <button id="ancora">Gioca ancora</button>
+    </div>
+  </div>
+
+  <div class="pannello">
+    <div class="scheda">
+      <div class="etichetta">Prossima</div>
+      <canvas id="prossimo" width="104" height="104"></canvas>
+    </div>
+    <div class="scheda"><div class="etichetta">Punti</div><div class="valore" id="punti">0</div></div>
+    <div class="scheda"><div class="etichetta">File</div><div class="valore" id="file">0</div></div>
+    <div class="scheda"><div class="etichetta">Livello</div><div class="valore" id="livello">1</div></div>
+    <div class="scheda"><div class="etichetta">Record</div><div class="valore" id="record">0</div></div>
+    <button id="pausa" class="chiaro">⏸ Pausa</button>
+  </div>
+</div>
+
+<div class="tasti">
+  <button data-azione="sinistra" aria-label="Sinistra">◀</button>
+  <button data-azione="ruota" aria-label="Ruota">⟳</button>
+  <button data-azione="destra" aria-label="Destra">▶</button>
+  <button data-azione="giu" aria-label="Giù">▼</button>
+  <button data-azione="cade" aria-label="Lascia cadere">⤓</button>
+</div>
+<p class="aiuto">Tastiera: ← → sposta · ↑ ruota · ↓ scende · Spazio lascia cadere · P pausa</p>
+
+<script>
+(function () {
+  'use strict';
+
+  var COL = 10, RIGHE = 18, LATO = 32;
+
+  // Forme delle aiuole: da 2 a 4 caselle, ognuna con il suo colore di fiore.
+  var FORME = [
+    { m: [[1, 1, 1, 1]],             c: '#5b9bd5' },
+    { m: [[1, 1], [1, 1]],           c: '#f2b632' },
+    { m: [[0, 1, 0], [1, 1, 1]],     c: '#b07cc6' },
+    { m: [[1, 0, 0], [1, 1, 1]],     c: '#e8853d' },
+    { m: [[0, 0, 1], [1, 1, 1]],     c: '#4fa7a0' },
+    { m: [[0, 1, 1], [1, 1, 0]],     c: '#6fae5a' },
+    { m: [[1, 1, 0], [0, 1, 1]],     c: '#e0637a' },
+    { m: [[1, 1, 1]],                c: '#d98cb3' },
+    { m: [[1, 0], [1, 1]],           c: '#c9a227' },
+    { m: [[1, 1]],                   c: '#8fa3d9' }
+  ];
+  var PUNTI_FILE = [0, 100, 300, 500, 800];
+  var FILE_PER_LIVELLO = 8;
+
+  var tela = document.getElementById('campo');
+  var ctx = tela.getContext('2d');
+  var telaPross = document.getElementById('prossimo');
+  var ctxPross = telaPross.getContext('2d');
+
+  var elPunti = document.getElementById('punti');
+  var elFile = document.getElementById('file');
+  var elLivello = document.getElementById('livello');
+  var elRecord = document.getElementById('record');
+  var veloInizio = document.getElementById('veloInizio');
+  var veloPausa = document.getElementById('veloPausa');
+  var veloFine = document.getElementById('veloFine');
+
+  var griglia, pezzo, prossimo, sacco;
+  var punti, file, livello, record = 0;
+  var velBase = 1000;
+  var stato = 'inizio'; // inizio | gioco | pausa | fine
+  var accumulo = 0, ultimoTempo = 0;
+  var sparizione = null; // { righe: [...], fine: tempo }
+
+  // Un record separato per ogni velocità (la chiave è la velocità di partenza).
+  var records = {};
+  try { records = JSON.parse(localStorage.getItem('giardinoMammaRecords')) || {}; } catch (e) { records = {}; }
+  record = records[velBase] || 0;
+  elRecord.textContent = record;
+
+  function aggiornaRecordInizio() {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-rec]'), function (el) {
+      el.textContent = records[el.getAttribute('data-rec')] || 0;
+    });
+  }
+  aggiornaRecordInizio();
+
+  function mostraInizio() {
+    stato = 'inizio'; pezzo = null; griglia = grigliaVuota();
+    aggiornaRecordInizio();
+    veloPausa.hidden = true; veloFine.hidden = true; veloInizio.hidden = false;
+  }
+
+  function grigliaVuota() {
+    var g = [];
+    for (var r = 0; r < RIGHE; r++) {
+      var riga = [];
+      for (var c = 0; c < COL; c++) riga.push(null);
+      g.push(riga);
+    }
+    return g;
+  }
+
+  function pesca() {
+    if (!sacco || sacco.length === 0) {
+      sacco = [];
+      for (var i = 0; i < FORME.length; i++) sacco.push(i);
+      for (var j = sacco.length - 1; j > 0; j--) {
+        var k = Math.floor(Math.random() * (j + 1));
+        var t = sacco[j]; sacco[j] = sacco[k]; sacco[k] = t;
+      }
+    }
+    var f = FORME[sacco.pop()];
+    return { m: f.m.map(function (r) { return r.slice(); }), c: f.c, x: 0, y: 0 };
+  }
+
+  function urta(m, x, y) {
+    for (var r = 0; r < m.length; r++) {
+      for (var c = 0; c < m[r].length; c++) {
+        if (!m[r][c]) continue;
+        var nx = x + c, ny = y + r;
+        if (nx < 0 || nx >= COL || ny >= RIGHE) return true;
+        if (ny >= 0 && griglia[ny][nx]) return true;
+      }
+    }
+    return false;
+  }
+
+  function ruotata(m) {
+    var h = m.length, w = m[0].length, n = [];
+    for (var c = 0; c < w; c++) {
+      var riga = [];
+      for (var r = h - 1; r >= 0; r--) riga.push(m[r][c]);
+      n.push(riga);
+    }
+    return n;
+  }
+
+  function nuovoPezzo() {
+    pezzo = prossimo;
+    prossimo = pesca();
+    pezzo.x = Math.floor((COL - pezzo.m[0].length) / 2);
+    pezzo.y = 0;
+    accumulo = 0;
+    disegnaProssimo();
+    if (urta(pezzo.m, pezzo.x, pezzo.y)) finePartita();
+  }
+
+  function intervallo() {
+    return Math.max(110, velBase * Math.pow(0.88, livello - 1));
+  }
+
+  function inizia(vel) {
+    if (vel) velBase = vel;
+    record = records[velBase] || 0;
+    griglia = grigliaVuota();
+    sacco = null;
+    punti = 0; file = 0; livello = 1;
+    sparizione = null;
+    prossimo = pesca();
+    stato = 'gioco';
+    veloInizio.hidden = true; veloPausa.hidden = true; veloFine.hidden = true;
+    nuovoPezzo();
+    aggiornaNumeri();
+  }
+
+  function finePartita() {
+    stato = 'fine';
+    var nuovoRecord = punti > record;
+    if (nuovoRecord) {
+      record = punti;
+      records[velBase] = record;
+      try { localStorage.setItem('giardinoMammaRecords', JSON.stringify(records)); } catch (e) {}
+    }
+    document.getElementById('testoFine').textContent = 'Hai fatto ' + punti + ' punti!';
+    document.getElementById('testoRecord').textContent =
+      nuovoRecord && punti > 0 ? '🌟 Nuovo record! Bravissima!' : 'Il tuo record è ' + record + '.';
+    veloFine.hidden = false;
+    aggiornaNumeri();
+  }
+
+  function pausa(metti) {
+    if (metti && stato === 'gioco') { stato = 'pausa'; veloPausa.hidden = false; }
+    else if (!metti && stato === 'pausa') { stato = 'gioco'; veloPausa.hidden = true; }
+  }
+
+  function aggiornaNumeri() {
+    elPunti.textContent = punti;
+    elFile.textContent = file;
+    elLivello.textContent = livello;
+    elRecord.textContent = Math.max(record, punti);
+  }
+
+  function fissa() {
+    var m = pezzo.m;
+    for (var r = 0; r < m.length; r++) {
+      for (var c = 0; c < m[r].length; c++) {
+        if (m[r][c] && pezzo.y + r >= 0) griglia[pezzo.y + r][pezzo.x + c] = pezzo.c;
+      }
+    }
+    pezzo = null;
+    var piene = [];
+    for (var y = 0; y < RIGHE; y++) {
+      if (griglia[y].every(function (v) { return v; })) piene.push(y);
+    }
+    if (piene.length) {
+      sparizione = { righe: piene, fine: performance.now() + 280 };
+    } else {
+      nuovoPezzo();
+    }
+  }
+
+  function togliRighe() {
+    var n = sparizione.righe.length;
+    sparizione.righe.forEach(function (y) {
+      griglia.splice(y, 1);
+      var vuota = [];
+      for (var c = 0; c < COL; c++) vuota.push(null);
+      griglia.unshift(vuota);
+    });
+    sparizione = null;
+    punti += PUNTI_FILE[n] * livello;
+    file += n;
+    livello = Math.floor(file / FILE_PER_LIVELLO) + 1;
+    aggiornaNumeri();
+    nuovoPezzo();
+  }
+
+  function attivo() { return stato === 'gioco' && pezzo && !sparizione; }
+
+  function sposta(dx) {
+    if (attivo() && !urta(pezzo.m, pezzo.x + dx, pezzo.y)) pezzo.x += dx;
+  }
+
+  function ruota() {
+    if (!attivo()) return;
+    var n = ruotata(pezzo.m);
+    var prove = [0, -1, 1, -2, 2];
+    for (var i = 0; i < prove.length; i++) {
+      if (!urta(n, pezzo.x + prove[i], pezzo.y)) {
+        pezzo.m = n; pezzo.x += prove[i];
+        return;
+      }
+    }
+  }
+
+  function scendi(manuale) {
+    if (!attivo()) return;
+    if (!urta(pezzo.m, pezzo.x, pezzo.y + 1)) {
+      pezzo.y++;
+      if (manuale) { punti += 1; aggiornaNumeri(); }
+    } else {
+      fissa();
+    }
+    accumulo = 0;
+  }
+
+  function cade() {
+    if (!attivo()) return;
+    while (!urta(pezzo.m, pezzo.x, pezzo.y + 1)) { pezzo.y++; punti += 2; }
+    aggiornaNumeri();
+    fissa();
+  }
+
+  var AZIONI = {
+    sinistra: function () { sposta(-1); },
+    destra: function () { sposta(1); },
+    ruota: ruota,
+    giu: function () { scendi(true); },
+    cade: cade
+  };
+
+  // ---------- Disegno ----------
+
+  function rettTondo(c, x, y, w, h, r) {
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+  }
+
+  function casella(c, x, y, lato, colore, alfa) {
+    c.save();
+    c.globalAlpha = alfa == null ? 1 : alfa;
+    c.fillStyle = colore;
+    rettTondo(c, x + 1.5, y + 1.5, lato - 3, lato - 3, lato * 0.22);
+    c.fill();
+    // fiorellino al centro
+    var cx = x + lato / 2, cy = y + lato / 2, p = lato * 0.13;
+    c.fillStyle = 'rgba(255,255,255,0.55)';
+    for (var i = 0; i < 4; i++) {
+      var a = Math.PI / 4 + i * Math.PI / 2;
+      c.beginPath();
+      c.arc(cx + Math.cos(a) * p, cy + Math.sin(a) * p, p, 0, Math.PI * 2);
+      c.fill();
+    }
+    c.fillStyle = 'rgba(255,240,170,0.95)';
+    c.beginPath();
+    c.arc(cx, cy, p * 0.75, 0, Math.PI * 2);
+    c.fill();
+    c.restore();
+  }
+
+  function disegna(ora) {
+    ctx.clearRect(0, 0, tela.width, tela.height);
+
+    // terreno a quadretti leggeri
+    ctx.strokeStyle = 'rgba(160,135,90,0.18)';
+    ctx.lineWidth = 1;
+    for (var c = 1; c < COL; c++) {
+      ctx.beginPath(); ctx.moveTo(c * LATO + 0.5, 0); ctx.lineTo(c * LATO + 0.5, tela.height); ctx.stroke();
+    }
+    for (var r = 1; r < RIGHE; r++) {
+      ctx.beginPath(); ctx.moveTo(0, r * LATO + 0.5); ctx.lineTo(tela.width, r * LATO + 0.5); ctx.stroke();
+    }
+    if (!griglia) return;
+
+    for (var y = 0; y < RIGHE; y++) {
+      var lampo = sparizione && sparizione.righe.indexOf(y) !== -1;
+      for (var x = 0; x < COL; x++) {
+        if (!griglia[y][x]) continue;
+        if (lampo) {
+          var resto = Math.max(0, (sparizione.fine - ora) / 280);
+          casella(ctx, x * LATO, y * LATO, LATO, '#fff3b0', resto);
+        } else {
+          casella(ctx, x * LATO, y * LATO, LATO, griglia[y][x]);
+        }
+      }
+    }
+
+    if (pezzo) {
+      // ombra: mostra dove atterrerà
+      var oy = pezzo.y;
+      while (!urta(pezzo.m, pezzo.x, oy + 1)) oy++;
+      disegnaForma(ctx, pezzo.m, pezzo.x * LATO, oy * LATO, LATO, pezzo.c, 0.22);
+      disegnaForma(ctx, pezzo.m, pezzo.x * LATO, pezzo.y * LATO, LATO, pezzo.c, 1);
+    }
+  }
+
+  function disegnaForma(c, m, px, py, lato, colore, alfa) {
+    for (var r = 0; r < m.length; r++) {
+      for (var k = 0; k < m[r].length; k++) {
+        if (m[r][k]) casella(c, px + k * lato, py + r * lato, lato, colore, alfa);
+      }
+    }
+  }
+
+  function disegnaProssimo() {
+    ctxPross.clearRect(0, 0, telaPross.width, telaPross.height);
+    if (!prossimo) return;
+    var lato = 24, m = prossimo.m;
+    var px = (telaPross.width - m[0].length * lato) / 2;
+    var py = (telaPross.height - m.length * lato) / 2;
+    disegnaForma(ctxPross, m, px, py, lato, prossimo.c, 1);
+  }
+
+  // ---------- Ciclo ----------
+
+  function ciclo(ora) {
+    var dt = Math.min(100, ora - ultimoTempo);
+    ultimoTempo = ora;
+    if (stato === 'gioco') {
+      if (sparizione) {
+        if (ora >= sparizione.fine) togliRighe();
+      } else if (pezzo) {
+        accumulo += dt;
+        if (accumulo >= intervallo()) scendi(false);
+      }
+    }
+    disegna(ora);
+    requestAnimationFrame(ciclo);
+  }
+
+  // ---------- Comandi ----------
+
+  document.addEventListener('keydown', function (e) {
+    var k = e.key;
+    if (k === 'ArrowLeft' || k === 'ArrowRight' || k === 'ArrowUp' || k === 'ArrowDown' || k === ' ') e.preventDefault();
+    if (k === 'p' || k === 'P' || k === 'Escape') {
+      if (stato === 'gioco') pausa(true); else if (stato === 'pausa') pausa(false);
+      return;
+    }
+    if (k === 'Enter') {
+      if (stato === 'fine') inizia(); else if (stato === 'pausa') pausa(false);
+      return;
+    }
+    if (k === 'ArrowLeft') AZIONI.sinistra();
+    else if (k === 'ArrowRight') AZIONI.destra();
+    else if (k === 'ArrowUp') { if (!e.repeat) AZIONI.ruota(); }
+    else if (k === 'ArrowDown') AZIONI.giu();
+    else if (k === ' ') { if (!e.repeat) AZIONI.cade(); }
+  });
+
+  // Tasti sullo schermo: tenendo premuto, sinistra/destra/giù si ripetono.
+  Array.prototype.forEach.call(document.querySelectorAll('[data-azione]'), function (b) {
+    var nome = b.getAttribute('data-azione');
+    var ripete = nome === 'sinistra' || nome === 'destra' || nome === 'giu';
+    var attesa = null, giro = null;
+    function ferma() { clearTimeout(attesa); clearInterval(giro); attesa = giro = null; }
+    b.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      ferma();
+      AZIONI[nome]();
+      if (ripete) attesa = setTimeout(function () { giro = setInterval(AZIONI[nome], 70); }, 260);
+    });
+    b.addEventListener('pointerup', ferma);
+    b.addEventListener('pointerleave', ferma);
+    b.addEventListener('pointercancel', ferma);
+    b.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-vel]'), function (b) {
+    b.addEventListener('click', function () { inizia(parseInt(b.getAttribute('data-vel'), 10)); });
+  });
+  document.getElementById('pausa').addEventListener('click', function () {
+    if (stato === 'gioco') pausa(true); else if (stato === 'pausa') pausa(false);
+    this.blur();
+  });
+  document.getElementById('riprendi').addEventListener('click', function () { pausa(false); });
+  document.getElementById('daCapo').addEventListener('click', mostraInizio);
+  document.getElementById('ancora').addEventListener('click', mostraInizio);
+
+  window.addEventListener('blur', function () { pausa(true); });
+  document.addEventListener('visibilitychange', function () { if (document.hidden) pausa(true); });
+
+  // App per telefono: funziona anche senza internet (solo se servita da un sito https).
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  }
+
+  requestAnimationFrame(function (t) { ultimoTempo = t; ciclo(t); });
+})();
+</script>
+</body>
+</html>
