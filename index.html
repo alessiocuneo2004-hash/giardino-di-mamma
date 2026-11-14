@@ -223,7 +223,6 @@
   }
   #veloInizio .quadro { margin-top: -64px; padding-top: 80px; }
   #veloInizio .quadro h2 { font-size: 26px; line-height: 34px; }
-  #veloInizio .secondario { margin-top: 22px; }
 
   /* Leva della difficoltà */
   .leva-zona { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 300px; max-width: 100%; margin: 4px 0; }
@@ -241,8 +240,39 @@
   }
   .base { position: absolute; left: 30px; top: 112px; width: 160px; height: 34px; background: var(--viola); border: 3px solid #fff; box-shadow: 4px 4px 0 var(--viola-bordo); }
   .collo { position: absolute; left: 90px; top: 104px; width: 40px; height: 14px; background: #0a0316; border: 3px solid #fff; }
-  .lato { position: absolute; top: 0; width: 110px; height: 150px; padding: 0; background: transparent; border: 0; }
-  .lato.sx { left: 0; } .lato.dx { right: 0; }
+  .joystick { cursor: grab; touch-action: none; }
+  .joystick.presa { cursor: grabbing; }
+  .joystick.presa .asta { transition: none; }
+
+  /* Impostazioni */
+  #veloImp { z-index: 20; }
+  .fondo { display: flex; gap: 10px; margin-top: 22px; }
+  .fondo .secondario { padding: 8px 14px; font-size: 16px; }
+  .riga {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    width: 100%; text-align: left; font-size: 16px; line-height: 20px;
+  }
+  .riga small { display: block; font-size: 13px; color: var(--lilla); }
+  .interruttore {
+    flex: none; min-width: 76px; min-height: 44px;
+    background: var(--viola); border: 3px solid #fff;
+    font-family: var(--pixel); font-size: 13px;
+  }
+  .interruttore[aria-pressed="true"] { background: var(--d); color: var(--inchiostro); }
+  .interruttore:disabled { opacity: 0.45; cursor: default; }
+  #sezioneTasti { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; }
+  #sezioneTasti[hidden] { display: none; }
+  .quadro h3 {
+    margin: 6px 0 0; font-family: var(--pixel); font-weight: 400;
+    font-size: 11px; line-height: 16px; color: var(--ciano);
+  }
+  #listaTasti { display: grid; gap: 6px; width: 100%; }
+  .assegna {
+    flex: none; min-width: 124px; min-height: 36px; padding: 0 8px;
+    background: var(--viola); border: 2px solid var(--viola-bordo);
+    font-size: 15px; font-weight: 800;
+  }
+  .assegna.ascolto { border-color: var(--d); color: var(--d); }
   .scelte { display: flex; justify-content: space-between; width: 100%; }
   .scelte button {
     min-width: 88px; min-height: 44px; padding: 0 6px;
@@ -349,12 +379,10 @@
       <h2 id="nomeDiff"></h2>
       <p id="descDiff"></p>
       <div class="leva-zona" role="group" aria-label="Difficoltà">
-        <div class="joystick">
+        <div class="joystick" id="joystick">
           <div class="asta" aria-hidden="true"><div class="stelo"></div><div class="pomello"></div></div>
           <div class="base" aria-hidden="true"></div>
           <div class="collo" aria-hidden="true"></div>
-          <button type="button" class="lato sx" id="levaSx" aria-label="Inclina a sinistra: più facile"></button>
-          <button type="button" class="lato dx" id="levaDx" aria-label="Inclina a destra: più difficile"></button>
         </div>
         <div class="scelte">
           <button type="button" data-diff="0">◀ Facile</button>
@@ -362,10 +390,13 @@
           <button type="button" data-diff="2">Difficile ▶</button>
         </div>
       </div>
-      <p class="nota">Inclina la leva per cambiare difficoltà<br>Record: <b id="recordInizio">0</b></p>
+      <p class="nota">Record: <b id="recordInizio">0</b></p>
       <button type="button" id="gioca" class="primario grosso">GIOCA</button>
     </div>
-    <button type="button" id="infoInizio" class="secondario">? Come si gioca</button>
+    <div class="fondo">
+      <button type="button" id="infoInizio" class="secondario">? Come si gioca</button>
+      <button type="button" id="impInizio" class="secondario">Impostazioni</button>
+    </div>
   </div>
 </div>
 
@@ -376,6 +407,7 @@
       <p>Il giardino ti aspetta.</p>
       <button type="button" id="riprendi" class="primario">RIPRENDI</button>
       <button type="button" id="daCapo" class="secondario">Ricomincia</button>
+      <button type="button" id="impPausa" class="secondario">Impostazioni</button>
     </div>
   </div>
 </div>
@@ -402,8 +434,27 @@
         <li><span class="gesto" aria-hidden="true">↓</span><span><b>Trascina in giù</b><span>per farlo scendere</span></span></li>
         <li><span class="gesto" aria-hidden="true">⇊</span><span><b>Striscia veloce in giù</b><span>per lasciarlo cadere</span></span></li>
       </ul>
-      <p class="nota">Con la tastiera: ← → sposta · ↑ ruota · ↓ scende · Spazio lascia cadere · P pausa</p>
+      <p class="nota" id="notaTasti"></p>
       <button type="button" id="chiudiInfo" class="primario">HO CAPITO</button>
+    </div>
+  </div>
+</div>
+
+<div class="velo" id="veloImp" hidden>
+  <div class="adatta">
+    <div class="quadro">
+      <h2>IMPOSTAZIONI</h2>
+      <div class="riga">
+        <span>Vibrazione al cambio di livello<small id="notaVibra" hidden>Questo dispositivo non la supporta.</small></span>
+        <button type="button" id="vibra" class="interruttore" aria-pressed="true">SÌ</button>
+      </div>
+      <div id="sezioneTasti">
+        <h3>TASTI DELLA TASTIERA</h3>
+        <div id="listaTasti"></div>
+        <p class="nota">Clicca un tasto e premi quello nuovo. Esc annulla.</p>
+        <button type="button" id="tastiBase" class="secondario">Ripristina i tasti</button>
+      </div>
+      <button type="button" id="chiudiImp" class="primario">FATTO</button>
     </div>
   </div>
 </div>
@@ -565,7 +616,9 @@
   var T_SPARIZIONE = 280, T_LAMPO = 160; // millisecondi: durata totale e parte del lampo
   var motoRidotto = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   var attesaFine = null;
-  var infoAperta = false, infoDaGioco = false;
+  var infoAperta = false, infoDaGioco = false, impAperta = false;
+  var vibra = true;
+  try { vibra = localStorage.getItem('giardinoMammaVibra') !== '0'; } catch (e) { vibra = true; }
 
   // Un record separato per ogni difficoltà (la chiave è la velocità di partenza).
   var records = {};
@@ -576,13 +629,14 @@
   document.getElementById('iconaPausa').innerHTML = icona(PAUSA, 18);
 
   // Cambia difficoltà: colore di tutta la pagina, meteo, testi e leva.
-  function scegliDiff(i) {
+  // tieniLeva = true lascia la leva dove l'ha messa il dito.
+  function scegliDiff(i, tieniLeva) {
     diffSel = Math.max(0, Math.min(DIFF.length - 1, i));
     var d = DIFF[diffSel];
     var radice = document.documentElement.style;
     radice.setProperty('--d', d.colore);
     radice.setProperty('--d-scuro', d.scuro);
-    radice.setProperty('--inclina', d.inclina + 'deg');
+    if (!tieniLeva) radice.setProperty('--inclina', d.inclina + 'deg');
     document.getElementById('meteo').innerHTML = icona(d.icona, 40, 'Difficoltà ' + d.nome.toLowerCase() + ': ' + d.alt);
     document.getElementById('meteoGrande').innerHTML = icona(d.icona, 128, d.alt);
     document.getElementById('sottotitolo').textContent = d.sotto;
@@ -709,7 +763,7 @@
   }
 
   function pausa(metti) {
-    if (infoAperta) return;
+    if (infoAperta || impAperta) return;
     if (metti && stato === 'gioco') { stato = 'pausa'; veloPausa.hidden = false; }
     else if (!metti && stato === 'pausa') { stato = 'gioco'; veloPausa.hidden = true; }
   }
@@ -765,7 +819,7 @@
     scheda.classList.remove('sale');
     void scheda.offsetWidth; // fa ripartire l'animazione
     scheda.classList.add('sale');
-    try { if (navigator.vibrate) navigator.vibrate([70, 50, 70]); } catch (e) {}
+    if (vibra) { try { if (navigator.vibrate) navigator.vibrate([70, 50, 70]); } catch (e) {} }
   }
 
   function attivo() { return stato === 'gioco' && pezzo && !sparizione; }
@@ -805,14 +859,6 @@
     aggiornaNumeri();
     fissa();
   }
-
-  var AZIONI = {
-    sinistra: function () { sposta(-1); },
-    destra: function () { sposta(1); },
-    ruota: ruota,
-    giu: function () { scendi(true); },
-    cade: cade
-  };
 
   // ---------- Disegno ----------
 
@@ -935,35 +981,175 @@
 
   // ---------- Comandi ----------
 
+  // ---------- Tasti della tastiera (personalizzabili dalle impostazioni) ----------
+
+  var TASTI_BASE = {
+    sinistra: 'ArrowLeft', destra: 'ArrowRight', ruotaDx: 'ArrowUp', ruotaSx: 'z',
+    giu: 'ArrowDown', cade: ' ', pausa: 'p'
+  };
+  var NOMI_AZIONI = [
+    ['sinistra', 'Sposta a sinistra'], ['destra', 'Sposta a destra'],
+    ['ruotaDx', 'Ruota a destra'], ['ruotaSx', 'Ruota a sinistra'],
+    ['giu', 'Scendi'], ['cade', 'Lascia cadere'], ['pausa', 'Pausa']
+  ];
+  var tasti = {};
+  var ascolto = null; // azione che sta aspettando il nuovo tasto
+  (function () {
+    var salvati = {};
+    try { salvati = JSON.parse(localStorage.getItem('giardinoMammaTasti')) || {}; } catch (e) { salvati = {}; }
+    for (var a in TASTI_BASE) tasti[a] = typeof salvati[a] === 'string' && salvati[a] ? salvati[a] : TASTI_BASE[a];
+  })();
+
+  function salvaTasti() {
+    try { localStorage.setItem('giardinoMammaTasti', JSON.stringify(tasti)); } catch (e) {}
+  }
+  // Le lettere valgono uguali maiuscole o minuscole.
+  function normalizza(k) { return k.length === 1 ? k.toLowerCase() : k; }
+  function nomeTasto(k) {
+    var nomi = {
+      ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓', ' ': 'Spazio',
+      Enter: 'Invio', Backspace: 'Backspace', Shift: 'Maiusc', Control: 'Ctrl', Alt: 'Alt',
+      Delete: 'Canc', Insert: 'Ins', Home: 'Home', End: 'Fine', PageUp: 'Pag su', PageDown: 'Pag giù'
+    };
+    if (nomi[k]) return nomi[k];
+    return k.length === 1 ? k.toUpperCase() : k;
+  }
+  function azioneDi(k) {
+    for (var a in tasti) if (tasti[a] === k) return a;
+    return null;
+  }
+
+  function aggiornaNotaTasti() {
+    var n = function (a) { return nomeTasto(tasti[a]); };
+    document.getElementById('notaTasti').textContent =
+      'Con la tastiera: ' + n('sinistra') + ' ' + n('destra') + ' sposta · ' +
+      n('ruotaDx') + ' ' + n('ruotaSx') + ' ruota · ' + n('giu') + ' scende · ' +
+      n('cade') + ' lascia cadere · ' + n('pausa') + ' pausa';
+  }
+  aggiornaNotaTasti();
+
+  function disegnaTasti() {
+    var lista = document.getElementById('listaTasti');
+    lista.textContent = '';
+    NOMI_AZIONI.forEach(function (voce) {
+      var riga = document.createElement('div');
+      riga.className = 'riga';
+      var nome = document.createElement('span');
+      nome.textContent = voce[1];
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'assegna' + (ascolto === voce[0] ? ' ascolto' : '');
+      b.textContent = ascolto === voce[0] ? 'Premi un tasto…' : nomeTasto(tasti[voce[0]]);
+      b.setAttribute('aria-label', voce[1] + ': ' + nomeTasto(tasti[voce[0]]) + '. Clicca per cambiare');
+      b.addEventListener('click', function () {
+        ascolto = ascolto === voce[0] ? null : voce[0];
+        disegnaTasti();
+      });
+      riga.appendChild(nome); riga.appendChild(b);
+      lista.appendChild(riga);
+    });
+  }
+
+  // Assegna il tasto all'azione in ascolto. Se era già usato, le due azioni se lo scambiano.
+  function assegna(k) {
+    var altra = azioneDi(k);
+    if (altra && altra !== ascolto) tasti[altra] = tasti[ascolto];
+    tasti[ascolto] = k;
+    ascolto = null;
+    salvaTasti();
+    disegnaTasti();
+    aggiornaNotaTasti();
+  }
+
+  // ---------- Impostazioni ----------
+
+  var veloImp = document.getElementById('veloImp');
+  var elVibra = document.getElementById('vibra');
+
+  function mostraVibra() {
+    var puo = !!navigator.vibrate;
+    elVibra.disabled = !puo;
+    elVibra.setAttribute('aria-pressed', String(vibra && puo));
+    elVibra.textContent = vibra && puo ? 'SÌ' : 'NO';
+    document.getElementById('notaVibra').hidden = puo;
+  }
+  elVibra.addEventListener('click', function () {
+    vibra = !vibra;
+    try { localStorage.setItem('giardinoMammaVibra', vibra ? '1' : '0'); } catch (e) {}
+    mostraVibra();
+    if (vibra) { try { navigator.vibrate(70); } catch (e) {} } // assaggio
+  });
+
+  // I tasti si scelgono solo dove c'è una tastiera vera: su telefono la sezione non compare.
+  var haTastiera = !!(window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches);
+  document.getElementById('sezioneTasti').hidden = !haTastiera;
+
+  function apriImp() {
+    if (impAperta) return;
+    impAperta = true; ascolto = null;
+    mostraVibra(); disegnaTasti();
+    veloImp.hidden = false;
+  }
+  function chiudiImp() {
+    if (!impAperta) return;
+    impAperta = false; ascolto = null;
+    veloImp.hidden = true;
+  }
+  document.getElementById('impInizio').addEventListener('click', function () { apriImp(); this.blur(); });
+  document.getElementById('impPausa').addEventListener('click', function () { apriImp(); this.blur(); });
+  document.getElementById('chiudiImp').addEventListener('click', chiudiImp);
+  document.getElementById('tastiBase').addEventListener('click', function () {
+    for (var a in TASTI_BASE) tasti[a] = TASTI_BASE[a];
+    ascolto = null;
+    salvaTasti(); disegnaTasti(); aggiornaNotaTasti();
+    this.blur();
+  });
+
   document.addEventListener('keydown', function (e) {
-    var k = e.key;
+    var k = normalizza(e.key);
     var suPulsante = e.target && e.target.tagName === 'BUTTON';
-    if (k === 'ArrowLeft' || k === 'ArrowRight' || k === 'ArrowUp' || k === 'ArrowDown') e.preventDefault();
-    if (k === ' ' && !suPulsante) e.preventDefault();
+    var attiva = suPulsante && (k === ' ' || k === 'Enter'); // il tasto sta premendo un pulsante
+
+    // Si sta scegliendo un tasto nuovo: questo tasto è la risposta.
+    if (ascolto) {
+      e.preventDefault();
+      if (k === 'Escape') { ascolto = null; disegnaTasti(); }
+      else if (k !== 'Tab' && k !== 'Unidentified' && k !== 'Dead') assegna(k);
+      return;
+    }
+    if (impAperta) {
+      if (k === 'Escape') { e.preventDefault(); chiudiImp(); }
+      return;
+    }
     if (infoAperta) {
       if (k === 'Escape' || (k === 'Enter' && !suPulsante)) { e.preventDefault(); chiudiInfo(); }
       return;
     }
     if (stato === 'inizio') {
-      if (k === 'ArrowLeft') scegliDiff(diffSel - 1);
-      else if (k === 'ArrowRight') scegliDiff(diffSel + 1);
-      else if ((k === 'Enter' || k === ' ') && !suPulsante) inizia();
+      if (k === 'ArrowLeft') { e.preventDefault(); scegliDiff(diffSel - 1); }
+      else if (k === 'ArrowRight') { e.preventDefault(); scegliDiff(diffSel + 1); }
+      else if ((k === 'Enter' || k === ' ') && !suPulsante) { e.preventDefault(); inizia(); }
       return;
     }
-    if (k === 'p' || k === 'P' || k === 'Escape') {
+    if (attiva) return;
+
+    var azione = azioneDi(k);
+    if (azione || k === ' ' || k.indexOf('Arrow') === 0) e.preventDefault();
+
+    if (k === 'Escape' || azione === 'pausa') {
       if (stato === 'gioco') pausa(true); else if (stato === 'pausa') pausa(false);
       return;
     }
-    if (k === 'Enter') {
-      if (suPulsante) return;
+    if (k === 'Enter' && stato !== 'gioco') {
       if (stato === 'fine') inizia(); else if (stato === 'pausa') pausa(false);
       return;
     }
-    if (k === 'ArrowLeft') AZIONI.sinistra();
-    else if (k === 'ArrowRight') AZIONI.destra();
-    else if (k === 'ArrowUp') { if (!e.repeat) AZIONI.ruota(); }
-    else if (k === 'ArrowDown') AZIONI.giu();
-    else if (k === ' ') { if (!e.repeat) AZIONI.cade(); }
+    if (azione === 'sinistra') sposta(-1);
+    else if (azione === 'destra') sposta(1);
+    else if (azione === 'ruotaDx') { if (!e.repeat) ruota(false); }
+    else if (azione === 'ruotaSx') { if (!e.repeat) ruota(true); }
+    else if (azione === 'giu') scendi(true);
+    else if (azione === 'cade') { if (!e.repeat) cade(); }
   });
 
   // Gesti (dito o mouse), ovunque sulla pagina tranne che sui pulsanti:
@@ -1039,9 +1225,50 @@
   document.getElementById('infoInizio').addEventListener('click', function () { apriInfo(); this.blur(); });
   document.getElementById('chiudiInfo').addEventListener('click', chiudiInfo);
 
-  // Scelta della difficoltà: i due lati della leva oppure i tre nomi.
-  document.getElementById('levaSx').addEventListener('click', function () { scegliDiff(diffSel - 1); });
-  document.getElementById('levaDx').addEventListener('click', function () { scegliDiff(diffSel + 1); });
+  // Leva della difficoltà: si prende col dito (o col mouse) e si inclina liberamente.
+  // Sinistra = facile, centro = normale, destra = difficile. Un tocco senza
+  // trascinare la sposta di uno scatto verso il lato toccato.
+  var joystick = document.getElementById('joystick');
+  var presa = null;
+
+  function angoloLeva(e) {
+    var r = joystick.getBoundingClientRect();
+    var dx = e.clientX - (r.left + r.width / 2);
+    var dy = (r.top + r.height * 122 / 150) - e.clientY; // distanza sopra il perno
+    if (dy < 12) dy = 12;
+    var gradi = Math.atan2(dx, dy) * 180 / Math.PI;
+    return Math.max(-40, Math.min(40, gradi));
+  }
+
+  joystick.addEventListener('pointerdown', function (e) {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    e.preventDefault();
+    presa = { id: e.pointerId, x0: e.clientX, y0: e.clientY, mossa: false };
+    try { joystick.setPointerCapture(e.pointerId); } catch (err) {}
+    joystick.classList.add('presa');
+  });
+  joystick.addEventListener('pointermove', function (e) {
+    if (!presa || e.pointerId !== presa.id) return;
+    if (!presa.mossa) {
+      if (Math.abs(e.clientX - presa.x0) < 6 && Math.abs(e.clientY - presa.y0) < 6) return;
+      presa.mossa = true;
+    }
+    var gradi = angoloLeva(e);
+    document.documentElement.style.setProperty('--inclina', gradi.toFixed(1) + 'deg');
+    var zona = gradi < -13 ? 0 : (gradi > 13 ? 2 : 1);
+    if (zona !== diffSel) scegliDiff(zona, true);
+  });
+  function lasciaLeva(e) {
+    if (!presa || e.pointerId !== presa.id) return;
+    var p = presa; presa = null;
+    joystick.classList.remove('presa');
+    if (!p.mossa && e.type === 'pointerup') {
+      var r = joystick.getBoundingClientRect();
+      scegliDiff(diffSel + (e.clientX < r.left + r.width / 2 ? -1 : 1));
+    }
+  }
+  joystick.addEventListener('pointerup', lasciaLeva);
+  joystick.addEventListener('pointercancel', lasciaLeva);
   Array.prototype.forEach.call(document.querySelectorAll('[data-diff]'), function (b) {
     b.addEventListener('click', function () { scegliDiff(parseInt(b.getAttribute('data-diff'), 10)); });
   });
